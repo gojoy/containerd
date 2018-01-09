@@ -500,3 +500,18 @@ func (s *apiServer) Stats(ctx context.Context, r *types.StatsRequest) (*types.St
 	t := convertToPb(stats)
 	return t, nil
 }
+
+func (s *apiServer)Migration(ctx context.Context, r *types.MigrationRequest) (*types.MigrationResponse, error) {
+	e:=&supervisor.MigrationTask{}
+	e.WithContext(ctx)
+	e.Id=r.Id
+	e.TargetMachine= struct {
+		Host string
+		Port uint32
+	}{Host:r.Targetmachine.Ip , Port:r.Targetmachine.Port }
+	s.sv.SendTask(e)
+	if err:=<-e.ErrorCh();err!=nil {
+		return nil,err
+	}
+	return &types.MigrationResponse{},nil
+}

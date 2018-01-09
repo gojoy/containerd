@@ -6,7 +6,6 @@ import (
 	"os"
 	netcontext "golang.org/x/net/context"
 	"github.com/containerd/containerd/api/grpc/types"
-	"encoding/json"
 )
 
 var migrationCommand=cli.Command{
@@ -18,7 +17,7 @@ var migrationCommand=cli.Command{
 			Name:"host,H",
 			Usage:"host ip address",
 		},
-		cli.IntFlag{
+		cli.UintFlag{
 			Name:"port,p",
 			Usage:"host port",
 		},
@@ -30,25 +29,22 @@ var migrationCommand=cli.Command{
 
 		id:=context.Args().First()
 		ip:=context.String("host")
-		port:=context.Int("port")
+		port:=context.Uint("port")
 		fmt.Printf("id:%v, ip %v, port:%v\n",id,ip,port)
 		c:=getClient(context)
 		machine:=&types.TargetMachine{
 			Ip:ip,
 			Port:uint32(port),
 		}
-		mig,err:=c.Migration(netcontext.Background(),&types.MigrationRequest{
+		_,err:=c.Migration(netcontext.Background(),&types.MigrationRequest{
 			Id:id,
 			Targetmachine:machine,
 		})
 		if err!=nil {
+			fmt.Println(err)
 			return err
 		}
-		data,err:=json.Marshal(mig)
-		if err!=nil {
-			return err
-		}
-		fmt.Println(string(data))
+		fmt.Println("after rpc!")
 		return nil
 	},
 }

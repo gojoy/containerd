@@ -17,6 +17,20 @@ service API {
 	rpc State(StateRequest) returns (StateResponse) {}
 	rpc Events(EventsRequest) returns (stream Event) {}
 	rpc Stats(StatsRequest) returns (StatsResponse) {}
+	rpc Migration(MigrationRequest) returns (MigrationResponse) {}
+}
+
+message MigrationRequest {
+	string id=1;
+	TargetMachine targetmachine=2;
+}
+
+message MigrationResponse {
+}
+
+message TargetMachine {
+	string ip=1;
+	uint32 port=2;
 }
 
 message GetServerVersionRequest {
