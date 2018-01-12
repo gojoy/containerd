@@ -8,13 +8,14 @@ import (
 	"path/filepath"
 	"os"
 	"io/ioutil"
-	"fmt"
 	"github.com/containerd/containerd/specs"
+	"github.com/pkg/sftp"
 )
 
 
 const Driver 	=	"overlay2"
 const DriverDir	=	"/var/lib/docker/overlay2"
+
 
 
 type Image struct {
@@ -82,7 +83,6 @@ func GetDir(imageID string) ([]string, error) {
 	lowers:=strings.Split(string(lowerContext),":")
 
 	for _,v:=range lowers {
-		fmt.Printf("v is %v\n",v)
 		lpath,err:=os.Readlink(filepath.Join(DriverDir,v))
 		if err!=nil {
 			return nil,err
@@ -97,8 +97,30 @@ func GetDir(imageID string) ([]string, error) {
 	return res,nil
 }
 
-func (i *Image) PreCopyImage(r *remoteMigration) error {
+func (i *Image) PreCopyImage(c *sftp.Client) error {
 
+	for _,v:=range i.lowerRO {
+
+		remotePath,err:=PathToRemote(v)
+		if err!=nil {
+			return err
+		}
+		glog.Printf("v :%v,r %v\n",v,remotePath)
+		_,err=c.Stat(remotePath)
+		if err!=nil {
+			//TODO 远程不存在该文件，则传输过去
+			if err==os.ErrNotExist {
+				//fmt.Printf("begin copy %v to %v\n",v,remotePath)
+				if err=RemoteCopyDir(v,remotePath,c);err!=nil {
+					return err
+				}
+			} else {
+				return err
+			}
+		}
+		//glog.Printf("remote has dir,so not copy:%v\n",w.Name())
+
+	}
 	return nil
 }
 

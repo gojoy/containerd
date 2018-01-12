@@ -10,10 +10,14 @@ import (
 	"path/filepath"
 	"time"
 	"github.com/sirupsen/logrus"
+	"github.com/pkg/sftp"
 )
 
 const STDIO = "/dev/null"
 const RUNTIMR  = "runc"
+const LoginUser  =	"root"
+const LoginPasswd  = 	"123456"
+const RemoteCheckpointDir  = "/var/lib/migration/checkpoint"
 
 //
 type remoteMigration struct {
@@ -24,10 +28,15 @@ type remoteMigration struct {
 	ip string
 	port uint32
 	clienApi types.APIClient
+	sftpClient *sftp.Client
 }
 
 func NewRemoteMigration(ip,id string,port uint32) (*remoteMigration,error) {
-	c,err:=getClient(ip,port)
+	c,err:=GetClient(ip,port)
+	if err!=nil {
+		return nil,err
+	}
+	sc,err:=GetSftpClient(LoginUser,LoginPasswd,ip,port)
 	if err!=nil {
 		return nil,err
 	}
@@ -36,9 +45,11 @@ func NewRemoteMigration(ip,id string,port uint32) (*remoteMigration,error) {
 		ip:ip,
 		port:port,
 		clienApi:c,
+		sftpClient:sc,
 	}
 	return r,nil
 }
+
 func (r *remoteMigration) DoRestore() error {
 	bpath,err:=filepath.Abs(r.Bundle)
 	if err!=nil {
@@ -65,11 +76,16 @@ func (r *remoteMigration) DoRestore() error {
 		Pid:"Init",
 		CloseStdin:true,
 	});err!=nil {
-
+		return err
 	}
+	return nil
 }
 
+func (r *remoteMigration) PreLoadImage(image *Image) error {
 
+	return image.PreCopyImage(r.sftpClient)
+
+}
 //func NewRemoteMigration(t *supervisor.MigrationTask,l *localMigration) (*remoteMigration,error)  {
 //	return &remoteMigration{
 //		Bundle:l.Bundle,
