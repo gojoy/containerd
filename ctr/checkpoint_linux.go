@@ -5,8 +5,8 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/urfave/cli"
 	"github.com/containerd/containerd/api/grpc/types"
+	"github.com/urfave/cli"
 	netcontext "golang.org/x/net/context"
 )
 

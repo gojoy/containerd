@@ -49,7 +49,6 @@ func TestImage_PreCopyImage(t *testing.T) {
 		lowerRO: lower,
 	}
 
-
 	c, err := GetSftpClient(LoginUser, LoginPasswd, "192.168.18.128", 22)
 	if err != nil {
 		t.Errorf("sftp err:%v\n", err)
@@ -106,11 +105,11 @@ func TestRemoteCopyDir(t *testing.T) {
 
 func TestRemoteMkdirAll(t *testing.T) {
 	c, err := GetSftpClient(LoginUser, LoginPasswd, "192.168.18.128", 22)
-	if err!=nil {
+	if err != nil {
 		t.Error(err)
 		return
 	}
-	if err:=RemoteMkdirAll(testrpath,c);err!=nil {
+	if err := RemoteMkdirAll(testrpath, c); err != nil {
 		t.Error(err)
 	}
 }

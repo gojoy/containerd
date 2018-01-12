@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/containerd/containerd/osutils"
 	"github.com/containerd/console"
+	"github.com/containerd/containerd/osutils"
 	runc "github.com/containerd/go-runc"
 	"github.com/tonistiigi/fifo"
 	"golang.org/x/net/context"

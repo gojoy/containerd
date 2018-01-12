@@ -1,21 +1,21 @@
 package supervisor
 
 import (
-	"time"
-	"github.com/sirupsen/logrus"
 	"errors"
 	"fmt"
 	"github.com/containerd/containerd/runtime"
+	"github.com/containerd/containerd/supervisor/migration"
+	"github.com/sirupsen/logrus"
 	"net"
 	"strings"
-	"github.com/containerd/containerd/supervisor/migration"
+	"time"
+
 )
 
 type MigrationTask struct {
 	baseTask
 	TargetMachine
 	Id string
-
 }
 
 type TargetMachine struct {
@@ -40,22 +40,21 @@ type TargetMachine struct {
 //	CheckpointDir string
 //}
 
-
 func (s *Supervisor) StartMigration(t *MigrationTask) error {
-	startTime:=time.Now()
+	startTime := time.Now()
 	fmt.Println("begin Migration")
-	logrus.Printf("startMigration %v\n",startTime)
-	c,err:=t.checkContainers(s)
-	if err!=nil {
+	logrus.Printf("startMigration %v\n", startTime)
+	c, err := t.checkContainers(s)
+	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
-	if err=t.checkTargetMachine(s);err!=nil {
+	if err = t.checkTargetMachine(s); err != nil {
 		return err
 	}
 
-	if err=t.startMigration(c,s);err!=nil {
+	if err = t.startMigration(c, s); err != nil {
 		return err
 	}
 	//logrus.Printf("container %v\n",i.container.ID())
@@ -63,28 +62,28 @@ func (s *Supervisor) StartMigration(t *MigrationTask) error {
 	return nil
 }
 
-func (t *MigrationTask)checkContainers(s *Supervisor) (*containerInfo,error) {
-	i,ok:=s.containers[t.Id]
+func (t *MigrationTask) checkContainers(s *Supervisor) (*containerInfo, error) {
+	i, ok := s.containers[t.Id]
 	if !ok {
-		return nil,MigrationWriteErr(fmt.Sprintf("Container %v Not Exist\n",t.Id))
+		return nil, MigrationWriteErr(fmt.Sprintf("Container %v Not Exist\n", t.Id))
 	}
-	if i.container.State()!=runtime.Running {
-		return nil,MigrationWriteErr("Container not running")
+	if i.container.State() != runtime.Running {
+		return nil, MigrationWriteErr("Container not running")
 	}
-	return i,nil
+	return i, nil
 }
 
 func (t *MigrationTask) checkTargetMachine(s *Supervisor) error {
-	ip:=t.Host
-	addrs,err:=net.InterfaceAddrs()
-	if err!=nil {
+	ip := t.Host
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
 		return MigrationWriteErr(err.Error())
 	}
-	for _,addr:=range addrs {
+	for _, addr := range addrs {
 
-		ips:=strings.SplitN(addr.String(),"/",2)
-		fmt.Printf("network:%v,string:%v,splite:%v\n",addr.Network(),addr.String(),ips[0])
-		if ips[0]==ip {
+		ips := strings.SplitN(addr.String(), "/", 2)
+		fmt.Printf("network:%v,string:%v,splite:%v\n", addr.Network(), addr.String(), ips[0])
+		if ips[0] == ip {
 			return MigrationWriteErr("Cannot Migration Localhost Machine")
 		}
 	}
@@ -92,37 +91,53 @@ func (t *MigrationTask) checkTargetMachine(s *Supervisor) error {
 }
 
 func MigrationWriteErr(w string) error {
-	return errors.New(fmt.Sprintf("miration failed:%v",w))
+	return errors.New(fmt.Sprintf("Miration Failed:%v", w))
 }
 
-func (t *MigrationTask) startCopyImage(c *containerInfo) error  {
-	image,err:=migration.NewImage(c.container)
-	if err!=nil {
+func (t *MigrationTask) startCopyImage(c *containerInfo) error {
+	image, err := migration.NewImage(c.container)
+	if err != nil {
 		return err
 	}
 	image.Path()
 	return nil
 }
 
-func (t *MigrationTask) startMigration(c *containerInfo,s *Supervisor) error {
-	l,err:=migration.NewLocalMigration(c.container)
+func (t *MigrationTask) startMigration(c *containerInfo, s *Supervisor) error {
+	var (
+		e chan error
+		err error
+	)
+
+	l, err := migration.NewLocalMigration(c.container)
+	if err != nil {
+		return MigrationWriteErr(err.Error())
+	}
+	r,err:=migration.NewRemoteMigration(t.Host,t.Id,t.Port)
 	if err!=nil {
+		return MigrationWriteErr(err.Error())
+	}
+
+	go r.PreLoadImage(e,l.Imagedir)
+
+	if err = l.DoCheckpoint(); err != nil {
 		return err
 	}
-	if err=l.DoCheckpoint();err!=nil {
-		return err
-	}
-	if err=l.DoneCheckpoint();err!=nil {
+	if err = l.DoneCheckpoint(); err != nil {
 		return err
 	}
 
+	if err=<-e;err!=nil {
+		return MigrationWriteErr(err.Error())
+	}
 	//r,_:=migration.NewRemoteMigration(t,l)
-
-	logrus.Println("begin restore")
+	if err=r.DoRestore();err!=nil {
+		return MigrationWriteErr(err.Error())
+	}
+	logrus.Println("done restore")
 	//go r.Dorestore(s)
 	return nil
 }
-
 
 //
 ////创建本地dump的目录

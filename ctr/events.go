@@ -6,9 +6,9 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/urfave/cli"
 	"github.com/containerd/containerd/api/grpc/types"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/urfave/cli"
 	netcontext "golang.org/x/net/context"
 )
 

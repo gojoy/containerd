@@ -415,7 +415,7 @@ func (s *Supervisor) handleTask(i Task) {
 	case *OOMTask:
 		err = s.oom(t)
 	case *MigrationTask:
-		err=s.StartMigration(t)
+		err = s.StartMigration(t)
 	default:
 		err = ErrUnknownTask
 	}

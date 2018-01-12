@@ -9,8 +9,8 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/containerd/containerd/osutils"
 	"github.com/containerd/console"
+	"github.com/containerd/containerd/osutils"
 )
 
 func writeMessage(f *os.File, level string, err error) {

@@ -15,9 +15,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/containerd/console"
 	"github.com/containerd/containerd/osutils"
 	"github.com/containerd/containerd/specs"
-	"github.com/containerd/console"
 	runc "github.com/containerd/go-runc"
 )
 
