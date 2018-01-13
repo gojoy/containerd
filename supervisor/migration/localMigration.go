@@ -52,6 +52,16 @@ func (l *localMigration) DoCheckpoint() error {
 		UnixSockets: true,
 		EmptyNS:     []string{"network"},
 	}
+
+	ldir:=filepath.Join(l.CheckpointDir,l.CheckpointName)
+
+	if _,err:=os.Stat(ldir);err==nil {
+		if err=os.RemoveAll(ldir);err!=nil {
+			return err
+		}
+		glog.Println("checkpoint dir exist,we remove it")
+	}
+
 	return l.Checkpoint(doCheckpoint, l.CheckpointDir)
 }
 

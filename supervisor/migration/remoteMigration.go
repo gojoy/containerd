@@ -11,52 +11,64 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
 )
 
 const STDIO = "/dev/null"
-const RUNTIMR = "runc"
+const RunTime = "runc"
 const LoginUser = "root"
 const LoginPasswd = "123456"
+const SftpPort  =	22
 const RemoteCheckpointDir = "/var/lib/migration/checkpoint"
+const RemoteDir = "/var/lib/migration/containers"
 
 //
 type remoteMigration struct {
-	Id            string
-	Rootfs        string
-	Bundle        string
-	CheckpointDir string
+	Id             string
+	Rootfs         string
+	Bundle         string
+	CheckpointDir  string
 	CheckpointName string
-	ip            string
-	port          uint32
-	clienApi      types.APIClient
-	sftpClient    *sftp.Client
-	spec          specs.Spec
+	ip             string
+	port           uint32
+	clienApi       types.APIClient
+	sftpClient     *sftp.Client
+	spec           specs.Spec
 }
 
 func NewRemoteMigration(ip, id string, port uint32) (*remoteMigration, error) {
+
+	logrus.Println("get grpc client")
 	c, err := GetClient(ip, port)
 	if err != nil {
 		return nil, err
 	}
-	sc, err := GetSftpClient(LoginUser, LoginPasswd, ip, port)
+
+	logrus.Println("get sftp client")
+	sc, err := GetSftpClient(LoginUser, LoginPasswd, ip, SftpPort)
 	if err != nil {
 		return nil, err
 	}
+
 	r := &remoteMigration{
-		Id:            id + "copy",
-		ip:            ip,
-		CheckpointDir: RemoteCheckpointDir,
-		CheckpointName:DumpAll,
-		port:          port,
-		clienApi:      c,
-		sftpClient:    sc,
+		Id:             id + "copy",
+		ip:             ip,
+		Bundle:         filepath.Join(RemoteDir, id+"copy"),
+		CheckpointDir:  RemoteCheckpointDir,
+		CheckpointName: DumpAll,
+		port:           port,
+		clienApi:       c,
+		sftpClient:     sc,
 	}
 	return r, nil
 }
 
 //在远程主机进行恢复
 func (r *remoteMigration) DoRestore() error {
+
+	//just log it,do nothing
+	glog.Println("Do Remote Restore")
+	return nil
+
 	bpath, err := filepath.Abs(r.Bundle)
 	if err != nil {
 		return nil
@@ -69,7 +81,7 @@ func (r *remoteMigration) DoRestore() error {
 		Stdin:         STDIO,
 		Stdout:        STDIO,
 		Stderr:        STDIO,
-		Runtime:       RUNTIMR,
+		Runtime:       RunTime,
 	}
 
 	//runc create
@@ -89,19 +101,20 @@ func (r *remoteMigration) DoRestore() error {
 	return nil
 }
 
-func (r *remoteMigration) PreLoadImage(e chan error,image *Image)  {
+func (r *remoteMigration) PreLoadImage(e chan error, image *Image) {
 
-	err:=image.PreCopyImage(r.sftpClient)
-	if err!=nil {
+	glog.Println("start precopy image")
+	err := image.PreCopyImage(r.sftpClient)
+	if err != nil {
 		glog.Println(err)
 	}
-	e<-err
-
+	glog.Println("return to main goroutine")
+	e <- err
 
 }
 
 //在远程主机创建对应的config.json文件
-func (r *remoteMigration) setSpec(l *localMigration) error {
+func (r *remoteMigration) SetSpec(l *localMigration) error {
 	if l == nil {
 		return fmt.Errorf("Err: local is nil\n")
 	}
@@ -113,9 +126,17 @@ func (r *remoteMigration) setSpec(l *localMigration) error {
 	rspec.Root.Path = r.Rootfs
 	rspec.Root.Readonly = false
 
-	if _, err := r.sftpClient.Stat(filepath.Join(r.Bundle, "config.json")); err != nil {
+	rfile:=filepath.Join(r.Bundle, "config.json")
+
+	if _, err := r.sftpClient.Stat(rfile); err != nil {
 		if err == os.ErrNotExist {
-			if specf, err := r.sftpClient.Create(filepath.Join(r.Bundle, "config.json")); err != nil {
+
+			if err=RemoteMkdirAll(rfile,r.sftpClient);err!=nil {
+				glog.Println(err)
+				return err
+			}
+
+			if specf, err := r.sftpClient.Create(rfile); err != nil {
 				glog.Println(err)
 				return err
 			} else {
@@ -130,7 +151,9 @@ func (r *remoteMigration) setSpec(l *localMigration) error {
 			return err
 		}
 	}
-	return fmt.Errorf("Remote Has Config.json\n")
+
+	glog.Println("Remote Has Config.json\n")
+	return nil
 }
 
 //func NewRemoteMigration(t *supervisor.MigrationTask,l *localMigration) (*remoteMigration,error)  {

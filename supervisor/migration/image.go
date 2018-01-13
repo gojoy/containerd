@@ -102,7 +102,7 @@ func (i *Image) PreCopyImage(c *sftp.Client) error {
 		if err != nil {
 			return err
 		}
-		glog.Printf("v :%v,r %v\n", v, remotePath)
+		//glog.Printf("v :%v,r %v\n", v, remotePath)
 		_, err = c.Stat(remotePath)
 		if err != nil {
 			//TODO 远程不存在该文件，则传输过去

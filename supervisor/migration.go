@@ -12,6 +12,7 @@ import (
 
 )
 
+//
 type MigrationTask struct {
 	baseTask
 	TargetMachine
@@ -42,27 +43,32 @@ type TargetMachine struct {
 
 func (s *Supervisor) StartMigration(t *MigrationTask) error {
 	startTime := time.Now()
-	fmt.Println("begin Migration")
+
 	logrus.Printf("startMigration %v\n", startTime)
+
 	c, err := t.checkContainers(s)
 	if err != nil {
-		fmt.Println(err)
+		logrus.Println(err)
 		return err
 	}
 
-	if err = t.checkTargetMachine(s); err != nil {
+	if err = t.checkTargetMachine(); err != nil {
 		return err
 	}
 
-	if err = t.startMigration(c, s); err != nil {
+	if err = t.startMigration(c); err != nil {
+		logrus.Println(err)
 		return err
 	}
-	//logrus.Printf("container %v\n",i.container.ID())
-	fmt.Println("migration Finish")
+
+	logrus.Println("migration Finish")
 	return nil
 }
 
 func (t *MigrationTask) checkContainers(s *Supervisor) (*containerInfo, error) {
+
+	logrus.Println("check containers exist")
+
 	i, ok := s.containers[t.Id]
 	if !ok {
 		return nil, MigrationWriteErr(fmt.Sprintf("Container %v Not Exist\n", t.Id))
@@ -73,7 +79,10 @@ func (t *MigrationTask) checkContainers(s *Supervisor) (*containerInfo, error) {
 	return i, nil
 }
 
-func (t *MigrationTask) checkTargetMachine(s *Supervisor) error {
+func (t *MigrationTask) checkTargetMachine( ) error {
+
+	logrus.Println("check target machine")
+
 	ip := t.Host
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
@@ -82,7 +91,7 @@ func (t *MigrationTask) checkTargetMachine(s *Supervisor) error {
 	for _, addr := range addrs {
 
 		ips := strings.SplitN(addr.String(), "/", 2)
-		fmt.Printf("network:%v,string:%v,splite:%v\n", addr.Network(), addr.String(), ips[0])
+		//fmt.Printf("network:%v,string:%v,splite:%v\n", addr.Network(), addr.String(), ips[0])
 		if ips[0] == ip {
 			return MigrationWriteErr("Cannot Migration Localhost Machine")
 		}
@@ -103,39 +112,60 @@ func (t *MigrationTask) startCopyImage(c *containerInfo) error {
 	return nil
 }
 
-func (t *MigrationTask) startMigration(c *containerInfo, s *Supervisor) error {
+func (t *MigrationTask) startMigration(c *containerInfo ) error {
 	var (
-		e chan error
+		e =make(chan error)
 		err error
 	)
 
+	logrus.Println("new local")
 	l, err := migration.NewLocalMigration(c.container)
 	if err != nil {
 		return MigrationWriteErr(err.Error())
 	}
+
+	logrus.Println("new remote")
 	r,err:=migration.NewRemoteMigration(t.Host,t.Id,t.Port)
 	if err!=nil {
 		return MigrationWriteErr(err.Error())
 	}
 
+	logrus.Println("start preload image in goroutine")
 	go r.PreLoadImage(e,l.Imagedir)
 
+	logrus.Println("do checkpoint")
 	if err = l.DoCheckpoint(); err != nil {
 		return err
 	}
+
+
 	if err = l.DoneCheckpoint(); err != nil {
 		return err
 	}
+
+	logrus.Println("copy check dir")
+	if err=l.CopyCheckPointToRemote(r);err!=nil {
+		return err
+	}
+
+	logrus.Println("set spec")
+	if err=r.SetSpec(l);err!=nil {
+		return err
+	}
+
+	logrus.Println("wait goroutines finish")
 
 	if err=<-e;err!=nil {
 		return MigrationWriteErr(err.Error())
 	}
 	//r,_:=migration.NewRemoteMigration(t,l)
+
+
 	if err=r.DoRestore();err!=nil {
 		return MigrationWriteErr(err.Error())
 	}
 	logrus.Println("done restore")
-	//go r.Dorestore(s)
+
 	return nil
 }
 

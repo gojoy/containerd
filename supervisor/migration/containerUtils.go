@@ -66,7 +66,7 @@ func GetSftpClient(user, passwd, host string, port uint32) (*sftp.Client, error)
 	addrConfig := &ssh.ClientConfig{
 		User:            user,
 		Auth:            auth,
-		Timeout:         10 * time.Second,
+		Timeout:         1 * time.Second,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 	addr := fmt.Sprintf("%s:%d", host, port)
@@ -103,6 +103,11 @@ func RemoteCopyDir(localPath, remotePath string, c *sftp.Client) error {
 	var (
 		err error
 	)
+
+	if _,err=c.Stat(remotePath);err==nil {
+		glog.Printf("remote has %v,we do not copy it",remotePath)
+		return nil
+	}
 
 	if err = RemoteMkdirAll(remotePath, c); err != nil {
 		return err
