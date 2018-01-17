@@ -2,16 +2,25 @@ package lazycopydir
 
 import (
 	"testing"
-	"os"
+
 	"fmt"
-	"path/filepath"
 )
 
 func TestCrawlerAllFiles(t *testing.T) {
-	d,err:=os.Getwd()
-	if err!=nil {
+
+	l:=NewJobList()
+	dir:="/tmp/testoverlay/lower"
+	if err:=CrawlerAllFiles(dir,l);err!=nil {
 		t.Error(err)
 		return
 	}
-	fmt.Printf("d is %v,\ndir is %v\n",d,filepath.Dir(d))
+	l.Remove(".")
+	fmt.Printf("l len is %d\n",len(l.data))
+	v,err:=l.Pop()
+	for err==nil {
+		fmt.Printf("%s ",v)
+		v,err=l.Pop()
+	}
 }
+
+
