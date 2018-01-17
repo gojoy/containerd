@@ -15,6 +15,19 @@ func init() {
 	glog=log.New(os.Stderr,"lazyCopyLog",log.Lshortfile)
 }
 
+func (l *LazyReplicator) Crawler() error {
+
+	if len(l.List.data)>0 {
+		glog.Println("crawler should start with empty joblist")
+		_,err:=l.List.Pop()
+		for err!=JobListPopError {
+			_,err=l.List.Pop()
+		}
+	}
+
+	return CrawlerAllFiles(l.CrawlerDir,l.List)
+}
+
 func CrawlerAllFiles(dir string,list *JobList) error  {
 
 	var (
@@ -53,6 +66,5 @@ func CrawlerAllFiles(dir string,list *JobList) error  {
 		glog.Println(err)
 		return err
 	}
-
 	return nil
 }

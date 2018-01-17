@@ -8,7 +8,11 @@ import (
 	"path/filepath"
 )
 
-func MonitorDir(dir, crawlerdir string, list *JobList, ctx context.Context) error {
+func (l *LazyReplicator) Monitor() error {
+	return MonitorDir(l.MonitorDir,l.List,l.ctx)
+}
+
+func MonitorDir(dir string, list *JobList, ctx context.Context) error {
 	var (
 		err     error
 		w       *fsnotify.Watcher
@@ -35,7 +39,7 @@ func MonitorDir(dir, crawlerdir string, list *JobList, ctx context.Context) erro
 		return err
 	}
 
-	for {
+	for len(list.data)>0 {
 		select {
 		case events := <-w.Events:
 			if events.Op&fsnotify.Create == fsnotify.Create {
@@ -71,7 +75,7 @@ func MonitorDir(dir, crawlerdir string, list *JobList, ctx context.Context) erro
 
 End:
 	fmt.Println("End")
-	return nil
+	return w.Close()
 
 }
 
