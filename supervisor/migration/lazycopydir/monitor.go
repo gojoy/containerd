@@ -73,10 +73,11 @@ func MonitorDir(dir string, list *JobList, ctx context.Context) error {
 		}
 	}
 
-End:
-	fmt.Println("End")
-	return w.Close()
+	goto End
 
+End:
+	glog.Println("Monitor End")
+	return w.Close()
 }
 
 

@@ -12,7 +12,7 @@ var (
 )
 
 func init() {
-	glog=log.New(os.Stderr,"lazyCopyLog",log.Lshortfile)
+	glog=log.New(os.Stderr,"lazyCopyLog: ",log.Lshortfile)
 }
 
 func (l *LazyReplicator) Crawler() error {

@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"fmt"
+	"os"
+	"path/filepath"
 )
 
 func TestCrawlerAllFiles(t *testing.T) {
@@ -23,4 +25,22 @@ func TestCrawlerAllFiles(t *testing.T) {
 	}
 }
 
+func TestStartLazyCopy(t *testing.T) {
+	var (
+		err error
+		crw="/var/lib/docker/workfile/testoverlay/lower"
+		mon="/var/lib/docker/workfile/testoverlay/upper"
+		lazy="/var/lib/docker/workfile/testoverlay/lazy"
+	)
+	go func() {
+		if _,err=os.Create(filepath.Join(mon,"mount.txt"));err!=nil {
+			fmt.Println(err)
+		}
+	}()
+	if err=StartLazyCopy(crw,mon,lazy);err!=nil {
+		t.Error(err)
+		return
+	}
 
+	fmt.Println("lazycopy finish!")
+}
