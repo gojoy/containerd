@@ -7,10 +7,12 @@ import (
 	//"github.com/containerd/containerd/supervisor"
 	"errors"
 	"fmt"
+	"os/exec"
 )
 
 const MigrationDir = "/run/migration"
 const DumpAll = "fullDump"
+const nfsconfig=" 192.168.18.0/24(rw,async,no_root_squash,nohide)"
 
 type localMigration struct {
 	runtime.Container
@@ -86,4 +88,44 @@ func (l *localMigration) CopyCheckPointToRemote(r *remoteMigration) error {
 		return err
 	}
 	return nil
+}
+
+func (l *localMigration) SetVolumeNfsMount() (bool,error) {
+	var (
+		count int
+		err error
+	)
+	spec,err:=LoadSpec(l.Container)
+	if err!=nil {
+		return false,err
+	}
+	if len(spec.Mounts)==0 {
+		return false, nil
+	}
+
+	f,err:=os.Open("/etc/export")
+	if err!=nil {
+		glog.Println(err)
+		return true,err
+	}
+	defer f.Close()
+
+
+	for _,v:=range spec.Mounts {
+		if v.Type=="bind" && len(v.Options)==1 &&v.Options[0]=="rbind" {
+			count++
+			if _,err=fmt.Fprintf(f,"%s %s",v.Source,nfsconfig);err!=nil {
+				glog.Println(err)
+				return true,err
+			}
+		}
+	}
+	if count==0 {
+		return false,nil
+	}
+
+	if err=FlushNfsConfig();err!=nil {
+		return true,err
+	}
+	return true,nil
 }

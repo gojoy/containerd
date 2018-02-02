@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"os/exec"
 )
 
 var (
@@ -184,4 +185,9 @@ func RemoteMkdirAll(rpath string, c *sftp.Client) error {
 		//fmt.Println(root)
 	}
 	return nil
+}
+
+func FlushNfsConfig() error {
+	cmd:=exec.Command("exportfs","-r")
+	return cmd.Run()
 }

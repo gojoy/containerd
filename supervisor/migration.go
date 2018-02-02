@@ -133,6 +133,10 @@ func (t *MigrationTask) startMigration(c *containerInfo ) error {
 	logrus.Println("start preload image in goroutine")
 	go r.PreLoadImage(e,l.Imagedir)
 
+	//TODO 将hostpath的目录nfs到远程挂载
+
+	//TODO 远程overlay mount各个目录
+
 	logrus.Println("do checkpoint")
 	if err = l.DoCheckpoint(); err != nil {
 		return err

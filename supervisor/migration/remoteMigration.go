@@ -53,7 +53,7 @@ func NewRemoteMigration(ip, id string, port uint32) (*remoteMigration, error) {
 		Id:             id + "copy",
 		ip:             ip,
 		Bundle:         filepath.Join(RemoteDir, id+"copy"),
-		CheckpointDir:  RemoteCheckpointDir,
+		CheckpointDir:  filepath.Join(RemoteCheckpointDir,id+"copy"),
 		CheckpointName: DumpAll,
 		port:           port,
 		clienApi:       c,
