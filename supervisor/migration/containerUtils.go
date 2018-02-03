@@ -26,7 +26,7 @@ var (
 	glog *log.Logger
 )
 
-func init() {
+func init(){
 	glog = log.New(os.Stderr, "", log.Lshortfile)
 }
 

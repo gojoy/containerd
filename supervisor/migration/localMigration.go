@@ -103,7 +103,8 @@ func (l *localMigration) SetVolumeNfsMount() (bool,error) {
 		return false, nil
 	}
 
-	f,err:=os.Open("/etc/export")
+	//f,err:=os.Open("/etc/export")
+	f,err:=os.OpenFile("/etc/exports",os.O_RDWR|os.O_APPEND,0666)
 	if err!=nil {
 		glog.Println(err)
 		return true,err

@@ -134,6 +134,10 @@ func (t *MigrationTask) startMigration(c *containerInfo ) error {
 	go r.PreLoadImage(e,l.Imagedir)
 
 	//TODO 将hostpath的目录nfs到远程挂载
+	logrus.Println("start nfs hostpath")
+	if ok,err:=l.SetVolumeNfsMount();!ok || err!=nil {
+		return err
+	}
 
 	//TODO 远程overlay mount各个目录
 
