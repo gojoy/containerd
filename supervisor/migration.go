@@ -56,7 +56,7 @@ func (s *Supervisor) StartMigration(t *MigrationTask) error {
 	}
 
 	if err = t.startMigration(c); err != nil {
-		logrus.Println(err)
+		logrus.Println("start error: ",err)
 		return err
 	}
 
@@ -134,23 +134,8 @@ func (t *MigrationTask) startMigration(c *containerInfo) error {
 
 	//TODO 将hostpath的目录nfs到远程挂载 准备在本机的工作
 	logrus.Println("start nfs hostpath")
-	if ok, err := l.SetVolumeNfsMount(); !ok || err != nil {
-		return err
-	}
-
-	//TODO 远程overlay mount各个目录 开始惰迁移
-
-	logrus.Println("do checkpoint")
-	if err = l.DoCheckpoint(); err != nil {
-		return err
-	}
-
-	if err = l.DoneCheckpoint(); err != nil {
-		return err
-	}
-
-	logrus.Println("copy check dir")
-	if err = l.CopyCheckPointToRemote(r); err != nil {
+	if ok, err := l.SetVolumeNfsMount(); err != nil {
+		logrus.Printf("ok is %v,err is %v\n",ok,err)
 		return err
 	}
 
@@ -159,16 +144,35 @@ func (t *MigrationTask) startMigration(c *containerInfo) error {
 		return err
 	}
 
+	if err = <-e; err != nil {
+		return MigrationWriteErr(err.Error())
+	}
+	logrus.Println("wait goroutines finish")
+
+
+
+
+	logrus.Println("do checkpoint")
+	if err = l.DoCheckpoint(); err != nil {
+		return err
+	}
+
+	//TODO 远程overlay mount各个目录 开始惰迁移
+
+	if err = l.DoneCheckpoint(); err != nil {
+		return err
+	}
+
+	logrus.Println("copy checkpoint dir")
+	if err = l.CopyCheckPointToRemote(r); err != nil {
+		return err
+	}
+
 	logrus.Println("copy upperdir")
 	if err=l.CopyUpperToRemote(r);err!=nil {
 		return err
 	}
 
-	logrus.Println("wait goroutines finish")
-
-	if err = <-e; err != nil {
-		return MigrationWriteErr(err.Error())
-	}
 
 	//r,_:=migration.NewRemoteMigration(t,l)
 

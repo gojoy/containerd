@@ -100,6 +100,7 @@ func PathToRemote(s string) (string, error) {
 }
 
 //传输本地文件夹到远程
+//todo  使用rsync传输 不用sftp
 func RemoteCopyDir(localPath, remotePath string, c *sftp.Client) error {
 	var (
 		err error

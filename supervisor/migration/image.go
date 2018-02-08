@@ -110,6 +110,8 @@ func (i *Image) CopyUpper(c *sftp.Client) error {
 		return err
 	}
 
+	glog.Printf("copy upper dir %v\n",mudir)
+
 	if err = RemoteCopyDir(filepath.Join(mudir, "diff"), filepath.Join(remoteDir, "diff"), c); err != nil {
 		glog.Println(err)
 		return err

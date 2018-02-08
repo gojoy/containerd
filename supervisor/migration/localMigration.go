@@ -49,7 +49,7 @@ func NewLocalMigration(c runtime.Container) (*localMigration, error) {
 func (l *localMigration) DoCheckpoint() error {
 	doCheckpoint := runtime.Checkpoint{
 		Name:        l.CheckpointName,
-		Exit:        true,
+		Exit:        false,
 		TCP:         true,
 		Shell:       true,
 		UnixSockets: true,
@@ -95,6 +95,7 @@ func (l *localMigration) CopyCheckPointToRemote(r *remoteMigration) error {
 	return nil
 }
 
+//需要重写，通过docker inspect 获取数据卷
 func (l *localMigration) SetVolumeNfsMount() (bool, error) {
 	var (
 		count int
@@ -105,7 +106,8 @@ func (l *localMigration) SetVolumeNfsMount() (bool, error) {
 		return false, err
 	}
 	if len(spec.Mounts) == 0 {
-		return false, nil
+		glog.Println(spec.Mounts)
+		return false, errors.New("nfs error: no mounts\n")
 	}
 
 	//f,err:=os.Open("/etc/export")
@@ -117,6 +119,7 @@ func (l *localMigration) SetVolumeNfsMount() (bool, error) {
 	defer f.Close()
 
 	for _, v := range spec.Mounts {
+		glog.Printf("type is %v,optionsis %v,dst is %v\n",v.Type,v.Options,v.Destination)
 		if v.Type == "bind" && len(v.Options) == 1 && v.Options[0] == "rbind" {
 			count++
 			if _, err = fmt.Fprintf(f, "%s %s", v.Source, nfsconfig); err != nil {
