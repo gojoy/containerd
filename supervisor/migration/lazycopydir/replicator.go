@@ -33,7 +33,7 @@ func NewLazyReplicator(crw, mon, lazy string) *LazyReplicator {
 	}
 }
 
-func (l *LazyReplicator) CancelMonitor()  {
+func (l *LazyReplicator) CancelMonitor() {
 	l.cancel()
 }
 

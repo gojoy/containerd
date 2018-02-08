@@ -13,11 +13,12 @@ import (
 	"time"
 )
 
+//const RemoteOverlay="/var/lib/migration/overlay/diff-id.." 远程主机的镜像层文件目录
 const STDIO = "/dev/null"
 const RunTime = "runc"
 const LoginUser = "root"
 const LoginPasswd = "123456"
-const SftpPort  =	22
+const SftpPort = 22
 const RemoteCheckpointDir = "/var/lib/migration/checkpoint"
 const RemoteDir = "/var/lib/migration/containers"
 
@@ -53,7 +54,7 @@ func NewRemoteMigration(ip, id string, port uint32) (*remoteMigration, error) {
 		Id:             id + "copy",
 		ip:             ip,
 		Bundle:         filepath.Join(RemoteDir, id+"copy"),
-		CheckpointDir:  filepath.Join(RemoteCheckpointDir,id+"copy"),
+		CheckpointDir:  filepath.Join(RemoteCheckpointDir, id+"copy"),
 		CheckpointName: DumpAll,
 		port:           port,
 		clienApi:       c,
@@ -123,15 +124,15 @@ func (r *remoteMigration) SetSpec(l *localMigration) error {
 		glog.Println(err)
 		return err
 	}
-	rspec.Root.Path = r.Rootfs
+	//rspec.Root.Path = r.Rootfs
 	rspec.Root.Readonly = false
 
-	rfile:=filepath.Join(r.Bundle, "config.json")
+	rfile := filepath.Join(r.Bundle, "config.json")
 
 	if _, err := r.sftpClient.Stat(rfile); err != nil {
 		if err == os.ErrNotExist {
 
-			if err=RemoteMkdirAll(rfile,r.sftpClient);err!=nil {
+			if err = RemoteMkdirAll(rfile, r.sftpClient); err != nil {
 				glog.Println(err)
 				return err
 			}
@@ -154,6 +155,11 @@ func (r *remoteMigration) SetSpec(l *localMigration) error {
 
 	glog.Println("Remote Has Config.json\n")
 	return nil
+}
+
+//目的主机overlay挂载rootfs，并且开始数据卷的惰迁移
+func (r *remoteMigration) RemotePrepare()  {
+
 }
 
 //func NewRemoteMigration(t *supervisor.MigrationTask,l *localMigration) (*remoteMigration,error)  {

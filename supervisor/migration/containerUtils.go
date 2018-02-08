@@ -16,17 +16,17 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
-	"os/exec"
 )
 
 var (
 	glog *log.Logger
 )
 
-func init(){
+func init() {
 	glog = log.New(os.Stderr, "", log.Lshortfile)
 }
 
@@ -105,8 +105,8 @@ func RemoteCopyDir(localPath, remotePath string, c *sftp.Client) error {
 		err error
 	)
 
-	if _,err=c.Stat(remotePath);err==nil {
-		glog.Printf("remote has %v,we do not copy it",remotePath)
+	if _, err = c.Stat(remotePath); err == nil {
+		glog.Printf("remote has %v,we do not copy it", remotePath)
 		return nil
 	}
 
@@ -188,6 +188,6 @@ func RemoteMkdirAll(rpath string, c *sftp.Client) error {
 }
 
 func FlushNfsConfig() error {
-	cmd:=exec.Command("exportfs","-r")
+	cmd := exec.Command("exportfs", "-r")
 	return cmd.Run()
 }

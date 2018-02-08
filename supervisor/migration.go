@@ -9,7 +9,6 @@ import (
 	"net"
 	"strings"
 	"time"
-
 )
 
 //
@@ -79,7 +78,7 @@ func (t *MigrationTask) checkContainers(s *Supervisor) (*containerInfo, error) {
 	return i, nil
 }
 
-func (t *MigrationTask) checkTargetMachine( ) error {
+func (t *MigrationTask) checkTargetMachine() error {
 
 	logrus.Println("check target machine")
 
@@ -112,9 +111,9 @@ func (t *MigrationTask) startCopyImage(c *containerInfo) error {
 	return nil
 }
 
-func (t *MigrationTask) startMigration(c *containerInfo ) error {
+func (t *MigrationTask) startMigration(c *containerInfo) error {
 	var (
-		e =make(chan error)
+		e   = make(chan error)
 		err error
 	)
 
@@ -125,51 +124,55 @@ func (t *MigrationTask) startMigration(c *containerInfo ) error {
 	}
 
 	logrus.Println("new remote")
-	r,err:=migration.NewRemoteMigration(t.Host,t.Id,t.Port)
-	if err!=nil {
+	r, err := migration.NewRemoteMigration(t.Host, t.Id, t.Port)
+	if err != nil {
 		return MigrationWriteErr(err.Error())
 	}
 
 	logrus.Println("start preload image in goroutine")
-	go r.PreLoadImage(e,l.Imagedir)
+	go r.PreLoadImage(e, l.Imagedir)
 
-	//TODO 将hostpath的目录nfs到远程挂载
+	//TODO 将hostpath的目录nfs到远程挂载 准备在本机的工作
 	logrus.Println("start nfs hostpath")
-	if ok,err:=l.SetVolumeNfsMount();!ok || err!=nil {
+	if ok, err := l.SetVolumeNfsMount(); !ok || err != nil {
 		return err
 	}
 
-	//TODO 远程overlay mount各个目录
+	//TODO 远程overlay mount各个目录 开始惰迁移
 
 	logrus.Println("do checkpoint")
 	if err = l.DoCheckpoint(); err != nil {
 		return err
 	}
 
-
 	if err = l.DoneCheckpoint(); err != nil {
 		return err
 	}
 
 	logrus.Println("copy check dir")
-	if err=l.CopyCheckPointToRemote(r);err!=nil {
+	if err = l.CopyCheckPointToRemote(r); err != nil {
 		return err
 	}
 
 	logrus.Println("set spec")
-	if err=r.SetSpec(l);err!=nil {
+	if err = r.SetSpec(l); err != nil {
+		return err
+	}
+
+	logrus.Println("copy upperdir")
+	if err=l.CopyUpperToRemote(r);err!=nil {
 		return err
 	}
 
 	logrus.Println("wait goroutines finish")
 
-	if err=<-e;err!=nil {
+	if err = <-e; err != nil {
 		return MigrationWriteErr(err.Error())
 	}
+
 	//r,_:=migration.NewRemoteMigration(t,l)
 
-
-	if err=r.DoRestore();err!=nil {
+	if err = r.DoRestore(); err != nil {
 		return MigrationWriteErr(err.Error())
 	}
 	logrus.Println("done restore")

@@ -9,7 +9,7 @@ import (
 )
 
 func (l *LazyReplicator) Monitor() error {
-	return MonitorDir(l.MonitorDir,l.List,l.ctx)
+	return MonitorDir(l.MonitorDir, l.List, l.ctx)
 }
 
 func MonitorDir(dir string, list *JobList, ctx context.Context) error {
@@ -39,15 +39,15 @@ func MonitorDir(dir string, list *JobList, ctx context.Context) error {
 		return err
 	}
 
-	for len(list.data)>0 {
+	for len(list.data) > 0 {
 		select {
 		case events := <-w.Events:
 			if events.Op&fsnotify.Create == fsnotify.Create {
 				if err = w.Add(events.Name); err != nil {
 					glog.Println(err)
 				}
-				if listdir,err=filepath.Rel(dir,events.Name);err!=nil {
-					glog.Printf("Rel err:%v\n",err)
+				if listdir, err = filepath.Rel(dir, events.Name); err != nil {
+					glog.Printf("Rel err:%v\n", err)
 
 				} else {
 					if err = list.Remove(listdir); err != nil {
@@ -79,5 +79,3 @@ End:
 	glog.Println("Monitor End")
 	return w.Close()
 }
-
-
