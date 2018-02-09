@@ -134,8 +134,8 @@ func (t *MigrationTask) startMigration(c *containerInfo) error {
 
 	//TODO 将hostpath的目录nfs到远程挂载 准备在本机的工作
 	logrus.Println("start nfs hostpath")
-	if ok, err := l.SetVolumeNfsMount(); err != nil {
-		logrus.Printf("ok is %v,err is %v\n",ok,err)
+	if err= l.SetNfsExport(); err != nil {
+		logrus.Println("nfs",err)
 		return err
 	}
 
@@ -148,8 +148,6 @@ func (t *MigrationTask) startMigration(c *containerInfo) error {
 		return MigrationWriteErr(err.Error())
 	}
 	logrus.Println("wait goroutines finish")
-
-
 
 
 	logrus.Println("do checkpoint")

@@ -25,6 +25,11 @@ type localMigration struct {
 
 }
 
+type volumes struct {
+	src, dst string
+}
+
+
 func NewLocalMigration(c runtime.Container) (*localMigration, error) {
 	i, err := NewImage(c)
 	if err != nil {
@@ -76,9 +81,26 @@ func (l *localMigration) DoneCheckpoint() error {
 	return nil
 }
 
+// copy id../diff(upperdir) to remote /var/lib/migration/overlay2/id../diff
 func (l *localMigration) CopyUpperToRemote(r *remoteMigration) error {
 
-	return l.Imagedir.CopyUpper(r.sftpClient)
+	var (
+		err error
+	)
+	localUpperDir:=l.Imagedir.upperRD
+	remoteUpperDir,err:=PathToRemote(localUpperDir)
+	if err!=nil {
+		return err
+	}
+
+	if err=RemoteMkdirAll(remoteUpperDir,r.sftpClient);err!=nil {
+		glog.Println(err)
+		return err
+	}
+
+	return RemoteCopyDirRsync(localUpperDir,remoteUpperDir,r.ip)
+
+	//return l.Imagedir.CopyUpper(r.sftpClient)
 
 }
 
@@ -88,12 +110,22 @@ func (l *localMigration) CopyCheckPointToRemote(r *remoteMigration) error {
 		return fmt.Errorf("Err: remote nil\n ")
 	}
 
-	if err := RemoteCopyDir(l.CheckpointDir, r.CheckpointDir, r.sftpClient); err != nil {
+	if err:=RemoteMkdirAll(r.CheckpointDir,r.sftpClient);err!=nil {
 		glog.Println(err)
 		return err
 	}
+	if err:=RemoteCopyDirRsync(l.CheckpointDir,r.CheckpointDir,r.ip);err!=nil {
+		glog.Println(err)
+		return err
+	}
+
+	//if err := RemoteCopyDir(l.CheckpointDir, r.CheckpointDir, r.sftpClient); err != nil {
+	//	glog.Println(err)
+	//	return err
+	//}
 	return nil
 }
+
 
 //需要重写，通过docker inspect 获取数据卷
 func (l *localMigration) SetVolumeNfsMount() (bool, error) {
@@ -136,4 +168,21 @@ func (l *localMigration) SetVolumeNfsMount() (bool, error) {
 		return true, err
 	}
 	return true, nil
+}
+
+func (l *localMigration) SetNfsExport( ) error {
+
+	vol,err:=GetVolume(l.ID())
+	if err!=nil {
+		glog.Println(err)
+		return err
+	}
+	if len(vol)==0 {
+		return nil
+	}
+	if err=SetNfsExport(vol);err!=nil {
+		glog.Println(err)
+
+	}
+	return err
 }

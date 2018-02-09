@@ -104,8 +104,8 @@ func (r *remoteMigration) DoRestore() error {
 
 func (r *remoteMigration) PreLoadImage(e chan error, image *Image) {
 
-	glog.Println("start precopy image")
-	err := image.PreCopyImage(r.sftpClient)
+	//glog.Println("start precopy image")
+	err := image.PreCopyImage(r.sftpClient,r)
 	if err != nil {
 		glog.Println(err)
 	}

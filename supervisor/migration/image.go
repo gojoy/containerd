@@ -19,7 +19,9 @@ type Image struct {
 	spce      specs.Spec
 	bundle    string
 	mountType string
+	// /var/lib/docker/overlay/id..
 	lowerRO   []string
+	// /var/lib/docker/overlay/id../diff
 	upperRD   string
 }
 
@@ -123,7 +125,7 @@ func (i *Image) CopyUpper(c *sftp.Client) error {
 	return nil
 }
 
-func (i *Image) PreCopyImage(c *sftp.Client) error {
+func (i *Image) PreCopyImage(c *sftp.Client,r *remoteMigration) error {
 
 	for _, v := range i.lowerRO {
 
@@ -137,9 +139,12 @@ func (i *Image) PreCopyImage(c *sftp.Client) error {
 			//TODO 远程不存在该文件，则传输过去
 			if err == os.ErrNotExist {
 				//fmt.Printf("begin copy %v to %v\n",v,remotePath)
-				if err = RemoteCopyDir(v, remotePath, c); err != nil {
+				if err=RemoteCopyDirRsync(v,remotePath,r.ip);err!=nil {
 					return err
 				}
+				//if err = RemoteCopyDir(v, remotePath, c); err != nil {
+				//	return err
+				//}
 			} else {
 				return err
 			}
@@ -149,3 +154,4 @@ func (i *Image) PreCopyImage(c *sftp.Client) error {
 	}
 	return nil
 }
+

@@ -113,3 +113,32 @@ func TestRemoteMkdirAll(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestRemoteCopyDirRsync(t *testing.T) {
+	re:=&remoteMigration{
+		ip:"192.168.18.128",
+	}
+	l:="/opt/workdir/tmpfile/protobuf"
+	r:="/opt/workdir/tmpfile/protobuf"
+	RemoteCopyDirRsync(l,r,re)
+
+}
+
+func TestGetVolume(t *testing.T) {
+	id:="m1"
+	v,err:=GetVolume(id)
+	if err!=nil {
+		t.FailNow()
+	}
+	fmt.Printf("v is %v\n",v)
+}
+
+func TestGetImage(t *testing.T) {
+	id:="m1"
+	v,err:=GetImage(id)
+	if err!=nil {
+		t.FailNow()
+		return
+	}
+	fmt.Printf("image is %v\n",v)
+}
