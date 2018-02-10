@@ -515,3 +515,22 @@ func (s *apiServer) Migration(ctx context.Context, r *types.MigrationRequest) (*
 	}
 	return &types.MigrationResponse{}, nil
 }
+
+func (s *apiServer) PreMigration(ctx context.Context, r *types.PreMigrationRequest) (*types.PreMigrationResponse, error) {
+	e := &supervisor.PreMigrationTask{}
+	e.WithContext(ctx)
+	e.Id = r.Id
+	e.ImageName = r.ImageName
+	e.Cname = r.CName
+	for _, v := range r.Vol {
+		e.Vol = append(e.Vol, struct {
+			Src string
+			Dst string
+		}{Src: v.Src, Dst: v.Dst})
+	}
+	s.sv.SendTask(e)
+	if err := <-e.ErrorCh(); err != nil {
+		return nil, err
+	}
+	return &types.PreMigrationResponse{}, nil
+}

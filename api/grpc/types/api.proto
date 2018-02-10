@@ -18,6 +18,23 @@ service API {
 	rpc Events(EventsRequest) returns (stream Event) {}
 	rpc Stats(StatsRequest) returns (StatsResponse) {}
 	rpc Migration(MigrationRequest) returns (MigrationResponse) {}
+	rpc PreMigration(PreMigrationRequest) returns (PreMigrationResponse) {}
+}
+
+message PreMigrationRequest {
+	string id=1;
+	string imageName=2;
+	repeated Volumes vol=3;
+	string cName=4;
+}
+
+message Volumes {
+	string src=1;
+	string dst=2;
+}
+
+message PreMigrationResponse {
+
 }
 
 message MigrationRequest {
