@@ -56,7 +56,7 @@ func (s *Supervisor) StartMigration(t *MigrationTask) error {
 	}
 
 	if err = t.startMigration(c); err != nil {
-		logrus.Println("start error: ",err)
+		logrus.Println("start error: ", err)
 		return err
 	}
 
@@ -134,8 +134,8 @@ func (t *MigrationTask) startMigration(c *containerInfo) error {
 
 	//TODO 将hostpath的目录nfs到远程挂载 准备在本机的工作
 	logrus.Println("start nfs hostpath")
-	if err= l.SetNfsExport(); err != nil {
-		logrus.Println("nfs",err)
+	if err = l.SetNfsExport(); err != nil {
+		logrus.Println("nfs", err)
 		return err
 	}
 
@@ -148,7 +148,6 @@ func (t *MigrationTask) startMigration(c *containerInfo) error {
 		return MigrationWriteErr(err.Error())
 	}
 	logrus.Println("wait goroutines finish")
-
 
 	logrus.Println("do checkpoint")
 	if err = l.DoCheckpoint(); err != nil {
@@ -167,10 +166,9 @@ func (t *MigrationTask) startMigration(c *containerInfo) error {
 	}
 
 	logrus.Println("copy upperdir")
-	if err=l.CopyUpperToRemote(r);err!=nil {
+	if err = l.CopyUpperToRemote(r); err != nil {
 		return err
 	}
-
 
 	//r,_:=migration.NewRemoteMigration(t,l)
 

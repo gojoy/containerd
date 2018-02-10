@@ -20,9 +20,9 @@ type Image struct {
 	bundle    string
 	mountType string
 	// /var/lib/docker/overlay/id..
-	lowerRO   []string
+	lowerRO []string
 	// /var/lib/docker/overlay/id../diff
-	upperRD   string
+	upperRD string
 }
 
 // 解析overlay2镜像的lower层（只读）和upper层（读写）
@@ -112,7 +112,7 @@ func (i *Image) CopyUpper(c *sftp.Client) error {
 		return err
 	}
 
-	glog.Printf("copy upper dir %v\n",mudir)
+	glog.Printf("copy upper dir %v\n", mudir)
 
 	if err = RemoteCopyDir(filepath.Join(mudir, "diff"), filepath.Join(remoteDir, "diff"), c); err != nil {
 		glog.Println(err)
@@ -125,7 +125,7 @@ func (i *Image) CopyUpper(c *sftp.Client) error {
 	return nil
 }
 
-func (i *Image) PreCopyImage(c *sftp.Client,r *remoteMigration) error {
+func (i *Image) PreCopyImage(c *sftp.Client, r *remoteMigration) error {
 
 	for _, v := range i.lowerRO {
 
@@ -139,7 +139,7 @@ func (i *Image) PreCopyImage(c *sftp.Client,r *remoteMigration) error {
 			//TODO 远程不存在该文件，则传输过去
 			if err == os.ErrNotExist {
 				//fmt.Printf("begin copy %v to %v\n",v,remotePath)
-				if err=RemoteCopyDirRsync(v,remotePath,r.ip);err!=nil {
+				if err = RemoteCopyDirRsync(v, remotePath, r.ip); err != nil {
 					return err
 				}
 				//if err = RemoteCopyDir(v, remotePath, c); err != nil {
@@ -154,4 +154,3 @@ func (i *Image) PreCopyImage(c *sftp.Client,r *remoteMigration) error {
 	}
 	return nil
 }
-

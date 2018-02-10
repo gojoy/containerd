@@ -7,7 +7,6 @@ import (
 	//"github.com/containerd/containerd/supervisor"
 	"errors"
 	"fmt"
-
 )
 
 const MigrationDir = "/run/migration"
@@ -22,13 +21,19 @@ type localMigration struct {
 	CheckpointName string
 	IsDump         bool
 	Imagedir       *Image
-
 }
 
-type volumes struct {
+type Volumes struct {
 	src, dst string
 }
 
+func NewVolumes(src, dst string) Volumes {
+	vol := Volumes{
+		src: src,
+		dst: dst,
+	}
+	return vol
+}
 
 func NewLocalMigration(c runtime.Container) (*localMigration, error) {
 	i, err := NewImage(c)
@@ -87,18 +92,18 @@ func (l *localMigration) CopyUpperToRemote(r *remoteMigration) error {
 	var (
 		err error
 	)
-	localUpperDir:=l.Imagedir.upperRD
-	remoteUpperDir,err:=PathToRemote(localUpperDir)
-	if err!=nil {
+	localUpperDir := l.Imagedir.upperRD
+	remoteUpperDir, err := PathToRemote(localUpperDir)
+	if err != nil {
 		return err
 	}
 
-	if err=RemoteMkdirAll(remoteUpperDir,r.sftpClient);err!=nil {
+	if err = RemoteMkdirAll(remoteUpperDir, r.sftpClient); err != nil {
 		glog.Println(err)
 		return err
 	}
 
-	return RemoteCopyDirRsync(localUpperDir,remoteUpperDir,r.ip)
+	return RemoteCopyDirRsync(localUpperDir, remoteUpperDir, r.ip)
 
 	//return l.Imagedir.CopyUpper(r.sftpClient)
 
@@ -110,11 +115,11 @@ func (l *localMigration) CopyCheckPointToRemote(r *remoteMigration) error {
 		return fmt.Errorf("Err: remote nil\n ")
 	}
 
-	if err:=RemoteMkdirAll(r.CheckpointDir,r.sftpClient);err!=nil {
+	if err := RemoteMkdirAll(r.CheckpointDir, r.sftpClient); err != nil {
 		glog.Println(err)
 		return err
 	}
-	if err:=RemoteCopyDirRsync(l.CheckpointDir,r.CheckpointDir,r.ip);err!=nil {
+	if err := RemoteCopyDirRsync(l.CheckpointDir, r.CheckpointDir, r.ip); err != nil {
 		glog.Println(err)
 		return err
 	}
@@ -125,7 +130,6 @@ func (l *localMigration) CopyCheckPointToRemote(r *remoteMigration) error {
 	//}
 	return nil
 }
-
 
 //需要重写，通过docker inspect 获取数据卷
 func (l *localMigration) SetVolumeNfsMount() (bool, error) {
@@ -151,7 +155,7 @@ func (l *localMigration) SetVolumeNfsMount() (bool, error) {
 	defer f.Close()
 
 	for _, v := range spec.Mounts {
-		glog.Printf("type is %v,optionsis %v,dst is %v\n",v.Type,v.Options,v.Destination)
+		glog.Printf("type is %v,optionsis %v,dst is %v\n", v.Type, v.Options, v.Destination)
 		if v.Type == "bind" && len(v.Options) == 1 && v.Options[0] == "rbind" {
 			count++
 			if _, err = fmt.Fprintf(f, "%s %s", v.Source, nfsconfig); err != nil {
@@ -170,17 +174,17 @@ func (l *localMigration) SetVolumeNfsMount() (bool, error) {
 	return true, nil
 }
 
-func (l *localMigration) SetNfsExport( ) error {
+func (l *localMigration) SetNfsExport() error {
 
-	vol,err:=GetVolume(l.ID())
-	if err!=nil {
+	vol, err := GetVolume(l.ID())
+	if err != nil {
 		glog.Println(err)
 		return err
 	}
-	if len(vol)==0 {
+	if len(vol) == 0 {
 		return nil
 	}
-	if err=SetNfsExport(vol);err!=nil {
+	if err = SetNfsExport(vol); err != nil {
 		glog.Println(err)
 
 	}

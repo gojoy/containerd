@@ -39,26 +39,26 @@ func TestGetSftpClient(t *testing.T) {
 	c.Close()
 }
 
-func TestImage_PreCopyImage(t *testing.T) {
-	lower, err := GetDir(id)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	i := Image{
-		lowerRO: lower,
-	}
-
-	c, err := GetSftpClient(LoginUser, LoginPasswd, "192.168.18.128", 22)
-	if err != nil {
-		t.Errorf("sftp err:%v\n", err)
-		t.Fail()
-		return
-	}
-	if err = i.PreCopyImage(c); err != nil {
-		t.Error(err)
-	}
-}
+//func TestImage_PreCopyImage(t *testing.T) {
+//	lower, err := GetDir(id)
+//	if err != nil {
+//		t.Error(err)
+//		return
+//	}
+//	i := Image{
+//		lowerRO: lower,
+//	}
+//
+//	c, err := GetSftpClient(LoginUser, LoginPasswd, "192.168.18.128", 22)
+//	if err != nil {
+//		t.Errorf("sftp err:%v\n", err)
+//		t.Fail()
+//		return
+//	}
+//	if err = i.PreCopyImage(c); err != nil {
+//		t.Error(err)
+//	}
+//}
 
 func TestPathToRemote(t *testing.T) {
 	localPath := testpath
@@ -114,31 +114,71 @@ func TestRemoteMkdirAll(t *testing.T) {
 	}
 }
 
-func TestRemoteCopyDirRsync(t *testing.T) {
-	re:=&remoteMigration{
-		ip:"192.168.18.128",
-	}
-	l:="/opt/workdir/tmpfile/protobuf"
-	r:="/opt/workdir/tmpfile/protobuf"
-	RemoteCopyDirRsync(l,r,re)
-
-}
+//func TestRemoteCopyDirRsync(t *testing.T) {
+//	re := &remoteMigration{
+//		ip: "192.168.18.128",
+//	}
+//	l := "/opt/workdir/tmpfile/protobuf"
+//	r := "/opt/workdir/tmpfile/protobuf"
+//	RemoteCopyDirRsync(l, r, re)
+//
+//}
 
 func TestGetVolume(t *testing.T) {
-	id:="m1"
-	v,err:=GetVolume(id)
-	if err!=nil {
+	id := "m1"
+	v, err := GetVolume(id)
+	if err != nil {
 		t.FailNow()
 	}
-	fmt.Printf("v is %v\n",v)
+	fmt.Printf("v is %v\n", v)
 }
 
 func TestGetImage(t *testing.T) {
-	id:="m1"
-	v,err:=GetImage(id)
-	if err!=nil {
+	id := "m1"
+	v, err := GetImage(id)
+	if err != nil {
 		t.FailNow()
 		return
 	}
-	fmt.Printf("image is %v\n",v)
+	fmt.Printf("image is %v\n", v)
+}
+
+func TestCopyUpperDir(t *testing.T) {
+	p := &PreMigrationInTargetMachine{
+		Id:        "123",
+		Cname:     "m1",
+		ImageName: "mysql:5.6",
+		Vol: []Volumes{
+			struct {
+				src string
+				dst string
+			}{src: "/opt/workdir/tmpfile/mysqlvol/data", dst: "/var/lib/mysql"},
+			struct {
+				src string
+				dst string
+			}{src: "/opt/workdir/tmpfile/custome", dst: "/etc/mysql/conf.d"},
+		},
+	}
+	//err:=p.CreateDockerContainer()
+	//if err!=nil {
+	//	glog.Println(err)
+	//	t.FailNow()
+	//	return
+	//}
+	err := p.CopyUpperDir()
+	if err != nil {
+		glog.Println(err)
+		t.FailNow()
+		return
+	}
+	return
+}
+
+func TestGetIp(t *testing.T) {
+	_, err := GetIp()
+	if err != nil {
+		println(err)
+		t.FailNow()
+	}
+	return
 }

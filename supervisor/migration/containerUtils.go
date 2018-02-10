@@ -164,29 +164,46 @@ func RemoteCopyDir(localPath, remotePath string, c *sftp.Client) error {
 	return nil
 }
 
-
-func RemoteCopyDirRsync(local,remote string,ip string) error  {
+func RemoteCopyDirRsync(local, remote string, ip string) error {
 
 	var (
 		err error
 	)
-	if local[len(local)-1]!='/' {
-		local=local+"/"
+	if local[len(local)-1] != '/' {
+		local = local + "/"
 	}
-	if remote[len(remote)-1]!='/' {
-		remote=remote+"/"
+	if remote[len(remote)-1] != '/' {
+		remote = remote + "/"
 	}
 
-	args:=append([]string{"-azv"},local,"root@"+ip+":"+remote)
+	args := append([]string{"-azv"}, local, "root@"+ip+":"+remote)
 	//glog.Printf("l is %v,r is %v,args is %v\n",local,remote,args)
 
-	cmd:=exec.Command("rsync",args...)
+	cmd := exec.Command("rsync", args...)
 	//glog.Printf("cmd is %v\n",cmd)
-	if err=cmd.Run();err!=nil {
-		glog.Printf("rsync error:%v\n",err)
-		glog.Printf("cmd is %v\n",cmd.Args)
+	if err = cmd.Run(); err != nil {
+		glog.Printf("rsync error:%v\n", err)
+		glog.Printf("cmd is %v\n", cmd.Args)
 	}
 	return err
+}
+
+func CopyDirLocal(src, dst string) error {
+	var (
+		err    error
+		local  = src
+		remote = dst
+	)
+	args := append([]string{"-azv"}, local, remote)
+
+	cmd := exec.Command("rsync", args...)
+	//glog.Printf("cmd is %v\n",cmd)
+	if err = cmd.Run(); err != nil {
+		glog.Printf("rsync error:%v\n", err)
+		glog.Printf("cmd is %v\n", cmd.Args)
+	}
+	return err
+
 }
 
 //创建所有的父文件夹，便于后续的传输
@@ -218,69 +235,69 @@ func FlushNfsConfig() error {
 	return cmd.Run()
 }
 
-func GetVolume(id string) ([]volumes,error)  {
+func GetVolume(id string) ([]Volumes, error) {
 
-	var vl []struct {HostConfig struct{Binds []string}}
-	var res []volumes
+	var vl []struct{ HostConfig struct{ Binds []string } }
+	var res []Volumes
 	//args:=append([]string{"inspect","-f","{{.HostConfig.Binds}}"},id)
-	args:=append([]string{"inspect"},id)
-	cmd:=exec.Command("docker",args...)
+	args := append([]string{"inspect"}, id)
+	cmd := exec.Command("docker", args...)
 
-	bs,err:=cmd.Output()
-	if err!=nil {
+	bs, err := cmd.Output()
+	if err != nil {
 		glog.Println(err)
-		return nil,err
+		return nil, err
 	}
 
-	if err=json.Unmarshal(bs,&vl);err!=nil {
+	if err = json.Unmarshal(bs, &vl); err != nil {
 		glog.Println(err)
-		return nil,err
+		return nil, err
 	}
 
-	if len(vl)!=1 {
+	if len(vl) != 1 {
 		glog.Println("len !=1 ")
-		return nil,errors.New("inspect not one\n")
+		return nil, errors.New("inspect not one\n")
 	}
 
-	for _,v:=range vl[0].HostConfig.Binds {
-		sp:=strings.Split(v,":")
-		if len(sp)!=2 {
+	for _, v := range vl[0].HostConfig.Binds {
+		sp := strings.Split(v, ":")
+		if len(sp) != 2 {
 			glog.Println("splite false")
 			glog.Println(sp)
-			return nil,errors.New("split error\n")
+			return nil, errors.New("split error\n")
 		}
-		res=append(res, struct{ src, dst string }{src:sp[0] , dst:sp[1] })
+		res = append(res, struct{ src, dst string }{src: sp[0], dst: sp[1]})
 	}
 
-	return res,nil
+	return res, nil
 }
 
-func GetImage(id string) (string,error)  {
+func GetImage(id string) (string, error) {
 	var (
 		res string
 		err error
-		tmp []struct{Config struct{Image string}}
+		tmp []struct{ Config struct{ Image string } }
 	)
-	args:=append([]string{"inspect"},id)
-	cmd:=exec.Command("docker",args...)
+	args := append([]string{"inspect"}, id)
+	cmd := exec.Command("docker", args...)
 
-	bs,err:=cmd.Output()
-	if err!=nil {
+	bs, err := cmd.Output()
+	if err != nil {
 		glog.Println(err)
-		return res,err
+		return res, err
 	}
 
-	if err=json.Unmarshal(bs,&tmp);err!=nil {
+	if err = json.Unmarshal(bs, &tmp); err != nil {
 		glog.Println(err)
-		return res,err
+		return res, err
 	}
 
-	res=tmp[0].Config.Image
+	res = tmp[0].Config.Image
 
-	return res,err
+	return res, err
 }
 
-func SetNfsExport(vol []volumes) error  {
+func SetNfsExport(vol []Volumes) error {
 
 	f, err := os.OpenFile("/etc/exports", os.O_RDWR|os.O_APPEND, 0666)
 	if err != nil {
@@ -289,11 +306,32 @@ func SetNfsExport(vol []volumes) error  {
 	}
 	defer f.Close()
 
-	for _,v:=range vol {
+	for _, v := range vol {
 		if _, err = fmt.Fprintf(f, "%s %s\n", v.src, nfsconfig); err != nil {
 			glog.Println(err)
 			return err
 		}
 	}
 	return FlushNfsConfig()
+}
+
+func GetIp() (string, error) {
+	var (
+		err error
+	)
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		glog.Println(err)
+		return "", err
+	}
+	for _, address := range addrs {
+
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				glog.Printf("ip is %v\n", ipnet.IP.String())
+				return ipnet.IP.String(), nil
+			}
+		}
+	}
+	return "", errors.New("Cannot Get Ip\n")
 }

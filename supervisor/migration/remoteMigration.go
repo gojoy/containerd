@@ -105,7 +105,7 @@ func (r *remoteMigration) DoRestore() error {
 func (r *remoteMigration) PreLoadImage(e chan error, image *Image) {
 
 	//glog.Println("start precopy image")
-	err := image.PreCopyImage(r.sftpClient,r)
+	err := image.PreCopyImage(r.sftpClient, r)
 	if err != nil {
 		glog.Println(err)
 	}
@@ -153,12 +153,12 @@ func (r *remoteMigration) SetSpec(l *localMigration) error {
 		}
 	}
 
-	glog.Println("Remote Has Config.json\n")
+	//glog.Println("Remote Has Config.json\n")
 	return nil
 }
 
 //目的主机overlay挂载rootfs，并且开始数据卷的惰迁移
-func (r *remoteMigration) RemotePrepare()  {
+func (r *remoteMigration) RemotePrepare() {
 
 }
 

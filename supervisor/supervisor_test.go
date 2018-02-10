@@ -63,3 +63,28 @@ func TestEventLogCompat(t *testing.T) {
 		t.Errorf("Improper event status: %v", s.eventLog[1].Status)
 	}
 }
+
+func TestSupervisor_PreMigration(t *testing.T) {
+	p := &PreMigrationTask{
+		Id:        "123",
+		Cname:     "m1",
+		ImageName: "mysql:5.6",
+		Vol: []Volumes{
+			struct {
+				Src string
+				Dst string
+			}{Src: "/opt/workdir/tmpfile/mysqlvol/data", Dst: "/var/lib/mysql"},
+			struct {
+				Src string
+				Dst string
+			}{Src: "/opt/workdir/tmpfile/custome", Dst: "/etc/mysql/conf.d"},
+		},
+	}
+
+	err := p.createDockerContainers()
+	if err != nil {
+		println(err)
+		t.FailNow()
+	}
+	return
+}
