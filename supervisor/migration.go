@@ -102,14 +102,14 @@ func MigrationWriteErr(w string) error {
 	return errors.New(fmt.Sprintf("Miration Failed:%v", w))
 }
 
-func (t *MigrationTask) startCopyImage(c *containerInfo) error {
-	image, err := migration.NewImage(c.container)
-	if err != nil {
-		return err
-	}
-	image.Path()
-	return nil
-}
+//func (t *MigrationTask) startCopyImage(c *containerInfo) error {
+//	image, err := migration.NewImage(c.container)
+//	if err != nil {
+//		return err
+//	}
+//	image.Path()
+//	return nil
+//}
 
 func (t *MigrationTask) startMigration(c *containerInfo) error {
 	var (
@@ -171,6 +171,12 @@ func (t *MigrationTask) startMigration(c *containerInfo) error {
 	}
 
 	//r,_:=migration.NewRemoteMigration(t,l)
+	//在目的主机进行premigration准备操作
+	logrus.Println("start premigration")
+	if err=r.PreRemoteMigration();err!=nil {
+		logrus.Printf("premigration error: %v\n",err)
+		return err
+	}
 
 	if err = r.DoRestore(); err != nil {
 		return MigrationWriteErr(err.Error())

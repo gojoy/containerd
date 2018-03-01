@@ -24,6 +24,7 @@ type Volumes struct {
 	Dst string
 }
 
+//在目的主机执行的准备操作
 // 1 nfs挂载vol卷 2 docker create 目标容器 3 复制upperdir到容器的upperdir
 func (s *Supervisor) PreMigration(t *PreMigrationTask) error {
 

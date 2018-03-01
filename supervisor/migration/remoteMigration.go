@@ -105,11 +105,12 @@ func (r *remoteMigration) DoRestore() error {
 func (r *remoteMigration) PreLoadImage(e chan error, image *Image) {
 
 	//glog.Println("start precopy image")
-	err := image.PreCopyImage(r.sftpClient, r)
-	if err != nil {
-		glog.Println(err)
-	}
-	glog.Println("return to main goroutine")
+	//err := image.PreCopyImage(r.sftpClient, r)
+	//if err != nil {
+	//	glog.Println(err)
+	//}
+	var err error=nil
+	glog.Println("we do nothing,just return to main goroutine")
 	e <- err
 
 }
@@ -157,9 +158,48 @@ func (r *remoteMigration) SetSpec(l *localMigration) error {
 	return nil
 }
 
-//目的主机overlay挂载rootfs，并且开始数据卷的惰迁移
-func (r *remoteMigration) RemotePrepare() {
+//向目的主机发送grpc请求
+func (r *remoteMigration) PreRemoteMigration( ) error {
 
+	var (
+		err error
+		Id=r.Id
+		srcip,imagename,Cname string
+		vol []Volumes
+		)
+	vol,err=GetVolume(Id)
+	if err!=nil {
+		glog.Println(err)
+		return err
+	}
+	imagename,err=GetImage(Id)
+	if err!=nil {
+		glog.Println(err)
+		return err
+	}
+	Cname,err=GetCName(Id)
+	if err!=nil {
+		glog.Println(err)
+		return err
+	}
+
+	preRequest:=&types.PreMigrationRequest{
+		Id:Id,
+		ImageName:imagename,
+		SrcIp:srcip,
+		CName:Cname,
+	}
+	pvol:=make([]*types.Volumes,0)
+	for _,v:=range vol {
+		pvol=append(pvol,&types.Volumes{Dst:v.dst,Src:v.src})
+	}
+	preRequest.Vol=pvol
+
+	if _,err=r.clienApi.PreMigration(netcontext.Background(),preRequest);err!=nil {
+		glog.Println(err)
+		return err
+	}
+	return nil
 }
 
 //func NewRemoteMigration(t *supervisor.MigrationTask,l *localMigration) (*remoteMigration,error)  {

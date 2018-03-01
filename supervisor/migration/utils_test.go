@@ -200,3 +200,14 @@ func TestGetIp(t *testing.T) {
 	}
 	return
 }
+
+func TestGetCName(t *testing.T) {
+	c,err:=GetCName("895fcefdab76")
+	if err!=nil {
+		glog.Println(err)
+		t.FailNow()
+		return
+	}
+	glog.Printf("cname is %v\n",c)
+	return
+}

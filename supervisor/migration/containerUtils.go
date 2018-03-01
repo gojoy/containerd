@@ -272,6 +272,33 @@ func GetVolume(id string) ([]Volumes, error) {
 	return res, nil
 }
 
+func GetCName(id string) (string,error) {
+	var (
+		err error
+		tmp []struct{Name string}
+	)
+	args:=append([]string{"inspect"},id)
+	cmd:=exec.Command("docker",args...)
+	bs, err := cmd.Output()
+	if err != nil {
+		glog.Println(err)
+		return "" ,err
+	}
+
+	if err=json.Unmarshal(bs,&tmp);err!=nil {
+		glog.Println(err)
+		return "",err
+	}
+	name:=tmp[0].Name
+	if name[0]=='/' {
+		res:=[]byte(name)
+		res=res[1:]
+		return string(res),nil
+	}
+
+	return tmp[0].Name,nil
+}
+
 func GetImage(id string) (string, error) {
 	var (
 		res string
@@ -312,7 +339,15 @@ func SetNfsExport(vol []Volumes) error {
 			return err
 		}
 	}
-	return FlushNfsConfig()
+
+	f.Sync()
+
+	if err=FlushNfsConfig();err!=nil{
+		glog.Println(err)
+		return err
+	}
+	return nil
+
 }
 
 func GetIp() (string, error) {
@@ -335,3 +370,4 @@ func GetIp() (string, error) {
 	}
 	return "", errors.New("Cannot Get Ip\n")
 }
+

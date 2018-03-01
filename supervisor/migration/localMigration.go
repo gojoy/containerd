@@ -132,47 +132,47 @@ func (l *localMigration) CopyCheckPointToRemote(r *remoteMigration) error {
 }
 
 //需要重写，通过docker inspect 获取数据卷
-func (l *localMigration) SetVolumeNfsMount() (bool, error) {
-	var (
-		count int
-		err   error
-	)
-	spec, err := LoadSpec(l.Container)
-	if err != nil {
-		return false, err
-	}
-	if len(spec.Mounts) == 0 {
-		glog.Println(spec.Mounts)
-		return false, errors.New("nfs error: no mounts\n")
-	}
-
-	//f,err:=os.Open("/etc/export")
-	f, err := os.OpenFile("/etc/exports", os.O_RDWR|os.O_APPEND, 0666)
-	if err != nil {
-		glog.Println(err)
-		return true, err
-	}
-	defer f.Close()
-
-	for _, v := range spec.Mounts {
-		glog.Printf("type is %v,optionsis %v,dst is %v\n", v.Type, v.Options, v.Destination)
-		if v.Type == "bind" && len(v.Options) == 1 && v.Options[0] == "rbind" {
-			count++
-			if _, err = fmt.Fprintf(f, "%s %s", v.Source, nfsconfig); err != nil {
-				glog.Println(err)
-				return true, err
-			}
-		}
-	}
-	if count == 0 {
-		return false, nil
-	}
-
-	if err = FlushNfsConfig(); err != nil {
-		return true, err
-	}
-	return true, nil
-}
+//func (l *localMigration) SetVolumeNfsMount() (bool, error) {
+//	var (
+//		count int
+//		err   error
+//	)
+//	spec, err := LoadSpec(l.Container)
+//	if err != nil {
+//		return false, err
+//	}
+//	if len(spec.Mounts) == 0 {
+//		glog.Println(spec.Mounts)
+//		return false, errors.New("nfs error: no mounts\n")
+//	}
+//
+//	//f,err:=os.Open("/etc/export")
+//	f, err := os.OpenFile("/etc/exports", os.O_RDWR|os.O_APPEND, 0666)
+//	if err != nil {
+//		glog.Println(err)
+//		return true, err
+//	}
+//	defer f.Close()
+//
+//	for _, v := range spec.Mounts {
+//		glog.Printf("type is %v,optionsis %v,dst is %v\n", v.Type, v.Options, v.Destination)
+//		if v.Type == "bind" && len(v.Options) == 1 && v.Options[0] == "rbind" {
+//			count++
+//			if _, err = fmt.Fprintf(f, "%s %s", v.Source, nfsconfig); err != nil {
+//				glog.Println(err)
+//				return true, err
+//			}
+//		}
+//	}
+//	if count == 0 {
+//		return false, nil
+//	}
+//
+//	if err = FlushNfsConfig(); err != nil {
+//		return true, err
+//	}
+//	return true, nil
+//}
 
 func (l *localMigration) SetNfsExport() error {
 
