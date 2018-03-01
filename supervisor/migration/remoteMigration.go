@@ -109,7 +109,7 @@ func (r *remoteMigration) PreLoadImage(e chan error, image *Image) {
 	//if err != nil {
 	//	glog.Println(err)
 	//}
-	var err error=nil
+	var err error = nil
 	glog.Println("we do nothing,just return to main goroutine")
 	e <- err
 
@@ -159,43 +159,50 @@ func (r *remoteMigration) SetSpec(l *localMigration) error {
 }
 
 //向目的主机发送grpc请求
-func (r *remoteMigration) PreRemoteMigration( ) error {
+func (r *remoteMigration) PreRemoteMigration(id, upperid string) error {
 
+	//glog.Printf("upperid is %v\n",upperid)
 	var (
-		err error
-		Id=r.Id
-		srcip,imagename,Cname string
-		vol []Volumes
-		)
-	vol,err=GetVolume(Id)
-	if err!=nil {
+		err                     error
+		Id                      = id
+		srcip, imagename, Cname string
+		vol                     []Volumes
+	)
+	vol, err = GetVolume(Id)
+	if err != nil {
 		glog.Println(err)
 		return err
 	}
-	imagename,err=GetImage(Id)
-	if err!=nil {
+	imagename, err = GetImage(Id)
+	if err != nil {
 		glog.Println(err)
 		return err
 	}
-	Cname,err=GetCName(Id)
+	Cname, err = GetCName(Id)
+	if err != nil {
+		glog.Println(err)
+		return err
+	}
+	srcip,err=GetIp()
 	if err!=nil {
 		glog.Println(err)
 		return err
 	}
 
-	preRequest:=&types.PreMigrationRequest{
-		Id:Id,
-		ImageName:imagename,
-		SrcIp:srcip,
-		CName:Cname,
+	preRequest := &types.PreMigrationRequest{
+		Id:        Id,
+		Upperid:   upperid,
+		ImageName: imagename,
+		SrcIp:     srcip,
+		CName:     Cname,
 	}
-	pvol:=make([]*types.Volumes,0)
-	for _,v:=range vol {
-		pvol=append(pvol,&types.Volumes{Dst:v.dst,Src:v.src})
+	pvol := make([]*types.Volumes, 0)
+	for _, v := range vol {
+		pvol = append(pvol, &types.Volumes{Dst: v.dst, Src: v.src})
 	}
-	preRequest.Vol=pvol
+	preRequest.Vol = pvol
 
-	if _,err=r.clienApi.PreMigration(netcontext.Background(),preRequest);err!=nil {
+	if _, err = r.clienApi.PreMigration(netcontext.Background(), preRequest); err != nil {
 		glog.Println(err)
 		return err
 	}

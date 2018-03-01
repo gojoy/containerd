@@ -173,8 +173,8 @@ func (t *MigrationTask) startMigration(c *containerInfo) error {
 	//r,_:=migration.NewRemoteMigration(t,l)
 	//在目的主机进行premigration准备操作
 	logrus.Println("start premigration")
-	if err=r.PreRemoteMigration();err!=nil {
-		logrus.Printf("premigration error: %v\n",err)
+	if err = r.PreRemoteMigration(t.Id, l.Imagedir.GetUpperId()); err != nil {
+		logrus.Printf("premigration error: %v\n", err)
 		return err
 	}
 

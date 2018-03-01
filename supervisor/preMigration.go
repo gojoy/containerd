@@ -13,6 +13,7 @@ const preVolume = "/var/lib/migration/mvolume"
 type PreMigrationTask struct {
 	baseTask
 	Id        string
+	UpperId   string
 	ImageName string
 	Vol       []Volumes
 	Cname     string
@@ -39,6 +40,7 @@ func (s *Supervisor) PreMigration(t *PreMigrationTask) error {
 
 	pre := &migration.PreMigrationInTargetMachine{
 		Id:        t.Id,
+		UpperId:   t.UpperId,
 		Cname:     t.Cname,
 		ImageName: t.ImageName,
 		Vol:       vols,

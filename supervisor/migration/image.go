@@ -23,6 +23,7 @@ type Image struct {
 	lowerRO []string
 	// /var/lib/docker/overlay/id../diff
 	upperRD string
+	upperid string
 }
 
 // 解析overlay2镜像的lower层（只读）和upper层（读写）
@@ -57,6 +58,7 @@ func NewImage(c runtime.Container) (*Image, error) {
 	i := &Image{}
 	i.spce = *s
 
+	i.upperid = imageid
 	i.upperRD = filepath.Join(DriverDir, imageid, "diff")
 	i.lowerRO = lower
 	i.Container = c
@@ -153,4 +155,8 @@ func (i *Image) PreCopyImage(c *sftp.Client, r *remoteMigration) error {
 
 	}
 	return nil
+}
+
+func (i *Image) GetUpperId() string {
+	return i.upperid
 }

@@ -27,6 +27,7 @@ message PreMigrationRequest {
 	repeated Volumes vol=3;
 	string cName=4;
 	string srcIp=5;
+	string upperid=6;
 }
 
 message Volumes {

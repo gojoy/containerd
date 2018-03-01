@@ -15,6 +15,7 @@ const remoteUpperDir = "/var/lib/migration/overlay2"
 //目标容器数据卷的路径： /var/lib/migration/mvolume/containerid/volid/{lazy,upper,work,merge,nfs}
 type PreMigrationInTargetMachine struct {
 	Id        string
+	UpperId   string
 	Cname     string
 	ImageName string
 	Vol       []Volumes
@@ -38,7 +39,7 @@ func (p *PreMigrationInTargetMachine) StartPre() error {
 	}
 
 	glog.Println("copy upperdir")
-	if err = p.CopyUpperDir(); err != nil {
+	if err = p.CopyUpperDir(p.UpperId); err != nil {
 		glog.Println(err)
 		return err
 	}
@@ -103,6 +104,7 @@ func (p *PreMigrationInTargetMachine) CreateDockerContainer() error {
 	}
 	args = append(args, p.ImageName)
 	cmd := exec.Command("docker", args...)
+	glog.Printf("create cmd is %v\n", cmd.Args)
 	if err = cmd.Run(); err != nil {
 		glog.Println(err)
 		return err
@@ -110,7 +112,7 @@ func (p *PreMigrationInTargetMachine) CreateDockerContainer() error {
 	return nil
 }
 
-func (p *PreMigrationInTargetMachine) CopyUpperDir() error {
+func (p *PreMigrationInTargetMachine) CopyUpperDir(imageid string) error {
 	var (
 		err  error
 		name = p.Cname + "copy"
@@ -119,7 +121,8 @@ func (p *PreMigrationInTargetMachine) CopyUpperDir() error {
 		}
 	)
 
-	src := filepath.Join(remoteUpperDir, p.Id, "diff")
+	src := filepath.Join(remoteUpperDir, imageid, "diff")
+	//glog.Printf("imageid is %v\n",imageid)
 	_, err = os.Stat(src)
 	if err != nil {
 		glog.Printf("Remote Don't Has  Upperdir %v:", err)
@@ -140,7 +143,7 @@ func (p *PreMigrationInTargetMachine) CopyUpperDir() error {
 		return err
 	}
 
-	glog.Printf("upperdis is %v\n", tmp[0].GraphDriver.Data.UpperDir)
+	glog.Printf("upperdir is is %v\n", tmp[0].GraphDriver.Data.UpperDir)
 	dst := tmp[0].GraphDriver.Data.UpperDir
 
 	if err = CopyDirLocal(src, dst); err != nil {
@@ -164,6 +167,7 @@ func (p *PreMigrationInTargetMachine) MountNfs() error {
 		args = append(args, filepath.Join(RemoteGetVolume(p.Id, i), "nfs"))
 
 		cmd := exec.Command("mount", args...)
+		glog.Printf("mount cmd is %v\n",cmd.Args)
 		if err = cmd.Run(); err != nil {
 			glog.Println(err)
 			return err
