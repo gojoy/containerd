@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"github.com/containerd/containerd/supervisor/migration"
 	"github.com/sirupsen/logrus"
-	"os"
 	"os/exec"
-	"path/filepath"
 )
 
 const preVolume = "/var/lib/migration/mvolume"
@@ -29,6 +27,9 @@ type Volumes struct {
 // 1 nfs挂载vol卷 2 docker create 目标容器 3 复制upperdir到容器的upperdir
 func (s *Supervisor) PreMigration(t *PreMigrationTask) error {
 
+	var (
+		err error
+	)
 	vols := make([]migration.Volumes, 0)
 	for _, v := range t.Vol {
 		v := migration.NewVolumes(v.Src, v.Dst)
@@ -42,10 +43,15 @@ func (s *Supervisor) PreMigration(t *PreMigrationTask) error {
 		Vol:       vols,
 		SrcIp:     t.SrcIp,
 	}
+
+	logrus.Println("start preMigration")
+	if err = pre.StartPre(); err != nil {
+		logrus.Printf("start pre in supervisor error:%v\n", err)
+		return err
+	}
+
 	return nil
 }
-
-
 
 func (p *PreMigrationTask) createDockerContainers() error {
 	var (
@@ -66,5 +72,3 @@ func (p *PreMigrationTask) createDockerContainers() error {
 	}
 	return nil
 }
-
-

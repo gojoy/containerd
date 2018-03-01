@@ -8,9 +8,26 @@ import (
 )
 
 var (
-	id        string = "0a4e9597c1741c1ae755beda85461030ca87aed304292a7993f76ec4fe2a75fe"
-	testpath  string = "/var/lib/docker/overlay2/328636b06d3c202ab3e0203265a371fbed36bb616579608642ea41f3124f48ea/diff"
-	testrpath string = "/var/lib/migration/overlay2/328636b06d3c202ab3e0203265a371fbed36bb616579608642ea41f3124f48ea/diff"
+	id1       = "895fcefdab76736c786ed6f327080eac57a0048cb89ce949a86b8293c9bbc939"
+	id        = "0a4e9597c1741c1ae755beda85461030ca87aed304292a7993f76ec4fe2a75fe"
+	testpath  = "/var/lib/docker/overlay2/328636b06d3c202ab3e0203265a371fbed36bb616579608642ea41f3124f48ea/diff"
+	testrpath = "/var/lib/migration/overlay2/328636b06d3c202ab3e0203265a371fbed36bb616579608642ea41f3124f48ea/diff"
+	p         = &PreMigrationInTargetMachine{
+		Id:        id1,
+		Cname:     "m1",
+		ImageName: "mysql:5.6",
+		SrcIp:     "192.168.18.129",
+		Vol: []Volumes{
+			struct {
+				src string
+				dst string
+			}{src: "/opt/workdir/tmpfile/mysqlvol/data", dst: "/var/lib/mysql"},
+			struct {
+				src string
+				dst string
+			}{src: "/opt/workdir/tmpfile/custome", dst: "/etc/mysql/conf.d"},
+		},
+	}
 )
 
 func TestGetDir(t *testing.T) {
@@ -179,6 +196,7 @@ func TestGetIp(t *testing.T) {
 	if err != nil {
 		println(err)
 		t.FailNow()
+		return
 	}
 	return
 }

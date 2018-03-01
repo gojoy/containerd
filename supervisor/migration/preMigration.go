@@ -21,11 +21,47 @@ type PreMigrationInTargetMachine struct {
 	SrcIp     string
 }
 
+func (p *PreMigrationInTargetMachine) StartPre() error {
+	var (
+		err error
+	)
+	glog.Println("premkdir")
+	if err = p.PreMkVolDir(); err != nil {
+		glog.Println(err)
+		return err
+	}
+
+	glog.Println("create docker container")
+	if err = p.CreateDockerContainer(); err != nil {
+		glog.Println(err)
+		return err
+	}
+
+	glog.Println("copy upperdir")
+	if err = p.CopyUpperDir(); err != nil {
+		glog.Println(err)
+		return err
+	}
+
+	glog.Println("mount nfs")
+	if err = p.MountNfs(); err != nil {
+		glog.Println(err)
+		return err
+	}
+
+	glog.Println("pre lazy replication")
+	if err = p.PreLazyDir(); err != nil {
+		glog.Println(err)
+		return err
+	}
+	return nil
+}
+
 func (p *PreMigrationInTargetMachine) PreMkVolDir() error {
 	var (
 		err error
 	)
-	for i:=0;i<len(p.Vol);i++ {
+	for i := 0; i < len(p.Vol); i++ {
 		tpath := filepath.Join(preVolume, p.Id, strconv.Itoa(i))
 		if err = os.MkdirAll(filepath.Join(tpath, "lazy"), 0666); err != nil {
 			glog.Println(err)
@@ -58,7 +94,7 @@ func (p *PreMigrationInTargetMachine) CreateDockerContainer() error {
 	)
 
 	args := append([]string{"create", "-P", "--security-opt", "seccomp:unconfined",
-	"-e", "MYSQL_ROOT_PASSWORD=123456", "--name"},
+		"-e", "MYSQL_ROOT_PASSWORD=123456", "--name"},
 		p.Cname+"copy")
 	//args=append(args,"-v")
 	for i, v := range p.Vol {
@@ -121,14 +157,14 @@ func (p *PreMigrationInTargetMachine) MountNfs() error {
 		err error
 		vol = p.Vol
 	)
-	for i,v:=range vol {
-		args:=append([]string{"-t","nfs","-o","v3"},
-		fmt.Sprintf("%s:%s",p.SrcIp,v.src))
+	for i, v := range vol {
+		args := append([]string{"-t", "nfs", "-o", "v3"},
+			fmt.Sprintf("%s:%s", p.SrcIp, v.src))
 
-		args=append(args,filepath.Join(RemoteGetVolume(p.Id,i),"nfs"))
+		args = append(args, filepath.Join(RemoteGetVolume(p.Id, i), "nfs"))
 
-		cmd:=exec.Command("mount",args...)
-		if err=cmd.Run();err!=nil {
+		cmd := exec.Command("mount", args...)
+		if err = cmd.Run(); err != nil {
 			glog.Println(err)
 			return err
 		}
@@ -136,7 +172,7 @@ func (p *PreMigrationInTargetMachine) MountNfs() error {
 	return nil
 }
 
-func RemoteGetVolume(id string,volid int) string {
+func RemoteGetVolume(id string, volid int) string {
 	return filepath.Join(preVolume, id, strconv.Itoa(volid))
 }
 
@@ -146,22 +182,28 @@ func (p *PreMigrationInTargetMachine) PreLazyDir() error {
 	var (
 		err error
 	)
-	for i:=0;i<len(p.Vol);i++ {
-		args:=[]string{"-t","overlay","overlay"}
-		l1:=filepath.Join(RemoteGetVolume(p.Id,i),"nfs")
-		l2:=filepath.Join(RemoteGetVolume(p.Id,i),"lazy")
-		u:=filepath.Join(RemoteGetVolume(p.Id,i),"upper")
-		w:=filepath.Join(RemoteGetVolume(p.Id,i),"work")
-		m:=filepath.Join(RemoteGetVolume(p.Id,i),"merge")
-		lower:=fmt.Sprintf("-olowerdir=%s:%s",l1,l2)
-		upper:=fmt.Sprintf("upperdir=%s",u)
-		work:=fmt.Sprintf("workdir=%s",w)
-		other:=lower+","+upper+","+work
+	for i := 0; i < len(p.Vol); i++ {
+		args := []string{"-t", "overlay", "overlay"}
+		l1 := filepath.Join(RemoteGetVolume(p.Id, i), "nfs")
+		l2 := filepath.Join(RemoteGetVolume(p.Id, i), "lazy")
+		u := filepath.Join(RemoteGetVolume(p.Id, i), "upper")
+		w := filepath.Join(RemoteGetVolume(p.Id, i), "work")
+		m := filepath.Join(RemoteGetVolume(p.Id, i), "merge")
+		lower := fmt.Sprintf("-olowerdir=%s:%s", l1, l2)
+		upper := fmt.Sprintf("upperdir=%s", u)
+		work := fmt.Sprintf("workdir=%s", w)
+		other := lower + "," + upper + "," + work
 
-		args=append(args,other,m)
+		args = append(args, other, m)
 
-		cmd:=exec.Command("mount",args)
+		cmd := exec.Command("mount", args...)
 
-		glog.Println(cmd.Args)
+		if err = cmd.Run(); err != nil {
+			glog.Println(err)
+			return err
+		}
+
+		//glog.Println(cmd.Args)
 	}
+	return nil
 }

@@ -522,6 +522,7 @@ func (s *apiServer) PreMigration(ctx context.Context, r *types.PreMigrationReque
 	e.Id = r.Id
 	e.ImageName = r.ImageName
 	e.Cname = r.CName
+	e.SrcIp = r.SrcIp
 	for _, v := range r.Vol {
 		e.Vol = append(e.Vol, struct {
 			Src string

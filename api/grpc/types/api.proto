@@ -26,6 +26,7 @@ message PreMigrationRequest {
 	string imageName=2;
 	repeated Volumes vol=3;
 	string cName=4;
+	string srcIp=5;
 }
 
 message Volumes {
