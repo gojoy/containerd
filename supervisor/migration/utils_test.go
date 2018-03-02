@@ -182,12 +182,11 @@ func TestCopyUpperDir(t *testing.T) {
 	//	t.FailNow()
 	//	return
 	//}
-	err := p.CopyUpperDir()
-	if err != nil {
-		glog.Println(err)
-		t.FailNow()
-		return
+	src:=filepath.Join(remoteUpperDir,p.Id,"diff/")
+	if src[len(src)-1]!='/' {
+		src=src+"/"
 	}
+	glog.Printf("src is %v\n",src)
 	return
 }
 

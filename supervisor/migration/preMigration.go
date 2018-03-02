@@ -150,9 +150,14 @@ func (p *PreMigrationInTargetMachine) CopyUpperDir(imageid string) error {
 		return err
 	}
 
-	glog.Printf("src is is %v,dst is %v\n", src,tmp[0].GraphDriver.Data.UpperDir)
 	dst := tmp[0].GraphDriver.Data.UpperDir
 
+	if src[len(src)]!='/' {
+		src=src+"/"
+	}
+
+	glog.Printf("src is is %v,dst is %v\n", src,tmp[0].GraphDriver.Data.UpperDir)
+	
 	if err = CopyDirLocal(src, dst); err != nil {
 		glog.Println(err)
 		return err
