@@ -363,7 +363,7 @@ func GetIp() (string, error) {
 
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
-				glog.Printf("ip is %v\n", ipnet.IP.String())
+				//glog.Printf("ip is %v\n", ipnet.IP.String())
 				return ipnet.IP.String(), nil
 			}
 		}

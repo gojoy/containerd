@@ -51,6 +51,7 @@ func CrawlerAllFiles(dir string, list *JobList) error {
 		return err
 	}
 
+	//add all crwfiles to list
 	if err = filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 
 		if err != nil {
@@ -61,7 +62,6 @@ func CrawlerAllFiles(dir string, list *JobList) error {
 			list.Append(path)
 		}
 		return nil
-
 	}); err != nil {
 		glog.Println(err)
 		return err

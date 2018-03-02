@@ -2,7 +2,6 @@ package lazycopydir
 
 import (
 	"context"
-	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"os"
 	"path/filepath"
@@ -24,6 +23,7 @@ func MonitorDir(dir string, list *JobList, ctx context.Context) error {
 		return err
 	}
 
+	//monitor monidir,remove updated file from list
 	if err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			glog.Println(err)

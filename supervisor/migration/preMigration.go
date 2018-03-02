@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"github.com/containerd/containerd/supervisor/migration/lazycopydir"
 )
 
 const preVolume = "/var/lib/migration/mvolume"
@@ -50,8 +51,14 @@ func (p *PreMigrationInTargetMachine) StartPre() error {
 		return err
 	}
 
-	glog.Println("pre lazy replication")
+	glog.Println("start pre lazy replication")
 	if err = p.PreLazyDir(); err != nil {
+		glog.Println(err)
+		return err
+	}
+
+	glog.Println("start lazycopy")
+	if err=p.StartLazyCopy();err!=nil {
 		glog.Println(err)
 		return err
 	}
@@ -64,23 +71,23 @@ func (p *PreMigrationInTargetMachine) PreMkVolDir() error {
 	)
 	for i := 0; i < len(p.Vol); i++ {
 		tpath := filepath.Join(preVolume, p.Id, strconv.Itoa(i))
-		if err = os.MkdirAll(filepath.Join(tpath, "lazy"), 0666); err != nil {
+		if err = os.MkdirAll(filepath.Join(tpath, "lazy"), 0755); err != nil {
 			glog.Println(err)
 			return err
 		}
-		if err = os.MkdirAll(filepath.Join(tpath, "upper"), 0666); err != nil {
+		if err = os.MkdirAll(filepath.Join(tpath, "upper"), 0755); err != nil {
 			glog.Println(err)
 			return err
 		}
-		if err = os.MkdirAll(filepath.Join(tpath, "work"), 0666); err != nil {
+		if err = os.MkdirAll(filepath.Join(tpath, "work"), 0755); err != nil {
 			glog.Println(err)
 			return err
 		}
-		if err = os.MkdirAll(filepath.Join(tpath, "merge"), 0666); err != nil {
+		if err = os.MkdirAll(filepath.Join(tpath, "merge"), 0755); err != nil {
 			glog.Println(err)
 			return err
 		}
-		if err = os.MkdirAll(filepath.Join(tpath, "nfs"), 0666); err != nil {
+		if err = os.MkdirAll(filepath.Join(tpath, "nfs"), 0755); err != nil {
 			glog.Println(err)
 			return err
 		}
@@ -143,7 +150,7 @@ func (p *PreMigrationInTargetMachine) CopyUpperDir(imageid string) error {
 		return err
 	}
 
-	glog.Printf("upperdir is is %v\n", tmp[0].GraphDriver.Data.UpperDir)
+	glog.Printf("src is is %v,dst is %v\n", src,tmp[0].GraphDriver.Data.UpperDir)
 	dst := tmp[0].GraphDriver.Data.UpperDir
 
 	if err = CopyDirLocal(src, dst); err != nil {
@@ -202,6 +209,7 @@ func (p *PreMigrationInTargetMachine) PreLazyDir() error {
 
 		cmd := exec.Command("mount", args...)
 
+		glog.Printf("overlay cmd is %v\n",cmd.Args)
 		if err = cmd.Run(); err != nil {
 			glog.Println(err)
 			return err
@@ -209,5 +217,25 @@ func (p *PreMigrationInTargetMachine) PreLazyDir() error {
 
 		//glog.Println(cmd.Args)
 	}
+	return nil
+}
+
+func (p *PreMigrationInTargetMachine) StartLazyCopy() error {
+	var (
+		err error
+		crwdir,monidir,lazydir string
+	)
+
+	for i:=0;i<len(p.Vol);i++ {
+		glog.Printf("start lazy vol %d\n",i)
+		crwdir=filepath.Join(RemoteGetVolume(p.Id, i), "nfs")
+		monidir=filepath.Join(RemoteGetVolume(p.Id, i), "upper")
+		lazydir=filepath.Join(RemoteGetVolume(p.Id, i), "lazy")
+		if err=lazycopydir.StartLazyCopy(crwdir,monidir,lazydir);err!=nil {
+			glog.Println(err)
+			return err
+		}
+	}
+	glog.Println("finish start lazy copy")
 	return nil
 }
