@@ -58,9 +58,10 @@ func CrawlerAllFiles(dir string, list *JobList) error {
 			glog.Println(err)
 			return err
 		}
-		if !info.IsDir() {
-			list.Append(path)
-		}
+		//if !info.IsDir() {
+		//	list.Append(path)
+		//}
+		list.Append(path)
 		return nil
 	}); err != nil {
 		glog.Println(err)

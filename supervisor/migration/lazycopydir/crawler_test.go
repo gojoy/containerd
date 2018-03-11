@@ -11,7 +11,7 @@ import (
 func TestCrawlerAllFiles(t *testing.T) {
 
 	l := NewJobList()
-	dir := "/tmp/testoverlay/lower"
+	dir := "/var/lib/docker/workfile/overlaytest/lower"
 	if err := CrawlerAllFiles(dir, l); err != nil {
 		t.Error(err)
 		return
@@ -20,7 +20,7 @@ func TestCrawlerAllFiles(t *testing.T) {
 	fmt.Printf("l len is %d\n", len(l.data))
 	v, err := l.Pop()
 	for err == nil {
-		fmt.Printf("%s ", v)
+		fmt.Printf("%s\n", v)
 		v, err = l.Pop()
 	}
 }
