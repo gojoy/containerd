@@ -3,10 +3,13 @@ package supervisor
 import (
 	"errors"
 	"fmt"
+	"github.com/containerd/containerd/api/grpc/types"
 	"github.com/containerd/containerd/runtime"
 	"github.com/containerd/containerd/supervisor/migration"
 	"github.com/sirupsen/logrus"
+	"log"
 	"net"
+	"os"
 	"strings"
 	"time"
 )
@@ -40,28 +43,67 @@ type TargetMachine struct {
 //	CheckpointDir string
 //}
 
+var (
+	TimeLogger *log.Logger
+	TimeLogPos = "/run/migration/time.log"
+)
+
 func (s *Supervisor) StartMigration(t *MigrationTask) error {
-	startTime := time.Now()
 
-	logrus.Printf("startMigration %v\n", startTime)
-
-	c, err := t.checkContainers(s)
+	f, err := os.OpenFile(TimeLogPos, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 	if err != nil {
-		logrus.Println(err)
+		logrus.Printf("set timelog err:%v\n", err)
 		return err
 	}
 
-	if err = t.checkTargetMachine(); err != nil {
+	TimeLogger = log.New(f, "TimeLog:  ", log.LUTC|log.Lshortfile)
+
+	defer f.Close()
+
+	//c, err := t.checkContainers(s)
+	//if err != nil {
+	//	logrus.Println(err)
+	//	return err
+	//}
+	//
+	//if err = t.checkTargetMachine(); err != nil {
+	//	return err
+	//}
+
+	c, _, err := t.PerMigrationTask(s)
+	if err != nil {
+		logrus.Printf("premigration faild:%v\n", err)
 		return err
 	}
 
-	if err = t.startMigration(c); err != nil {
+	if err = t.startMigrationTask(c); err != nil {
 		logrus.Println("start error: ", err)
 		return err
 	}
 
 	logrus.Println("migration Finish")
 	return nil
+}
+
+func (t *MigrationTask) PerMigrationTask(s *Supervisor) (*containerInfo, types.APIClient, error) {
+	start := time.Now()
+	TimeLogger.Printf("start premigration task at %v\n", start.String())
+
+	c, err := t.checkContainers(s)
+	if err != nil {
+		logrus.Println(err)
+		return nil, nil, err
+	}
+
+	rpclient, err := t.checkTargetMachine()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	end := time.Now()
+	TimeLogger.Printf("end premigration task at %v\n", end.String())
+	TimeLogger.Printf("pre migration task cost %v\n", end.Sub(start).String())
+	return c, rpclient, nil
 }
 
 func (t *MigrationTask) checkContainers(s *Supervisor) (*containerInfo, error) {
@@ -78,40 +120,36 @@ func (t *MigrationTask) checkContainers(s *Supervisor) (*containerInfo, error) {
 	return i, nil
 }
 
-func (t *MigrationTask) checkTargetMachine() error {
+func (t *MigrationTask) checkTargetMachine() (types.APIClient, error) {
 
 	logrus.Println("check target machine")
 
 	ip := t.Host
+	port := t.Port
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		return MigrationWriteErr(err.Error())
+		return nil, MigrationWriteErr(err.Error())
 	}
-	for _, addr := range addrs {
 
+	for _, addr := range addrs {
 		ips := strings.SplitN(addr.String(), "/", 2)
 		//fmt.Printf("network:%v,string:%v,splite:%v\n", addr.Network(), addr.String(), ips[0])
 		if ips[0] == ip {
-			return MigrationWriteErr("Cannot Migration Localhost Machine")
+			return nil, MigrationWriteErr("Cannot Migration Localhost Machine")
 		}
 	}
-	return nil
+	rpcclient, err := migration.GetClient(ip, port)
+	if err != nil {
+		return nil, MigrationWriteErr("cannot connect to target containerd server!" + err.Error())
+	}
+
+	return rpcclient, nil
 }
 
-func MigrationWriteErr(w string) error {
-	return errors.New(fmt.Sprintf("Miration Failed:%v", w))
-}
+func (t *MigrationTask) startMigrationTask(c *containerInfo) error {
+	start := time.Now()
+	TimeLogger.Printf("start migration task at %v\n", start.String())
 
-//func (t *MigrationTask) startCopyImage(c *containerInfo) error {
-//	image, err := migration.NewImage(c.container)
-//	if err != nil {
-//		return err
-//	}
-//	image.Path()
-//	return nil
-//}
-
-func (t *MigrationTask) startMigration(c *containerInfo) error {
 	var (
 		e   = make(chan error)
 		err error
@@ -183,7 +221,15 @@ func (t *MigrationTask) startMigration(c *containerInfo) error {
 	}
 	logrus.Println("done restore")
 
+	end := time.Now()
+	TimeLogger.Printf("end migration task ai %v\n", end.String())
+	TimeLogger.Printf("migration task cost %v\n", end.Sub(start))
+
 	return nil
+}
+
+func MigrationWriteErr(w string) error {
+	return errors.New(fmt.Sprintf("Miration Failed:%v", w))
 }
 
 //

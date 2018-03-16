@@ -2,6 +2,7 @@ package lazycopydir
 
 import (
 	"errors"
+	"strings"
 	"sync"
 )
 
@@ -54,6 +55,8 @@ func (l *JobList) Remove(v string) error {
 		return JobListRemoveEmpty
 	}
 
+	glog.Printf("list remove file %v\n", v)
+
 	if len(l.data) == 1 {
 		if l.data[0] == v {
 			l.data = nil
@@ -78,4 +81,42 @@ func (l *JobList) Remove(v string) error {
 		}
 	}
 	return JobListRemoveNotFound
+}
+
+//删除队列中该目录及该目录下的所有为文件
+func (l *JobList) RemoveAllDir(v string) error {
+	l.w.Lock()
+	defer l.w.Unlock()
+
+	if v[len(v)-1] != '\\' {
+		glog.Printf("remove dir error:%v is not a dir\n", v)
+	}
+	glog.Printf("list remove dir %v \n", v)
+	if len(l.data) == 0 {
+		return JobListRemoveEmpty
+	}
+
+	if len(l.data) == 1 {
+		if l.data[0] == v {
+			l.data = nil
+			return nil
+		} else {
+			return JobListRemoveNotFound
+		}
+	}
+
+	for i, j := range l.data {
+		if strings.Contains(j, v) {
+
+			if i == 0 {
+				l.data = l.data[1:]
+			} else if i == len(l.data)-1 {
+				l.data = l.data[:i-1]
+			} else {
+				copy(l.data[i:], l.data[i+1:])
+			}
+		}
+
+	}
+	return nil
 }

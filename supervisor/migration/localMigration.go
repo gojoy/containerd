@@ -59,7 +59,7 @@ func NewLocalMigration(c runtime.Container) (*localMigration, error) {
 func (l *localMigration) DoCheckpoint() error {
 	doCheckpoint := runtime.Checkpoint{
 		Name:        l.CheckpointName,
-		Exit:        false,
+		Exit:        true,
 		TCP:         true,
 		Shell:       true,
 		UnixSockets: true,

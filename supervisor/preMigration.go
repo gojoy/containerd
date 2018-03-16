@@ -1,10 +1,8 @@
 package supervisor
 
 import (
-	"fmt"
 	"github.com/containerd/containerd/supervisor/migration"
 	"github.com/sirupsen/logrus"
-	"os/exec"
 )
 
 const preVolume = "/var/lib/migration/mvolume"
@@ -56,22 +54,22 @@ func (s *Supervisor) PreMigration(t *PreMigrationTask) error {
 	return nil
 }
 
-func (p *PreMigrationTask) createDockerContainers() error {
-	var (
-		err error
-	)
-
-	args := append([]string{"create", "-P", "--security-opt", "seccomp:unconfined", "-e", "MYSQL_ROOT_PASSWORD=123456", "--name"},
-		p.Cname+"copy")
-	//args=append(args,"-v")
-	for _, v := range p.Vol {
-		args = append(args, "-v", fmt.Sprintf("%s:%s", v.Src, v.Dst))
-	}
-	args = append(args, p.ImageName)
-	cmd := exec.Command("docker", args...)
-	if err = cmd.Run(); err != nil {
-		logrus.Println(err)
-		return err
-	}
-	return nil
-}
+//func (p *PreMigrationTask) createDockerContainers() error {
+//	var (
+//		err error
+//	)
+//
+//	args := append([]string{"create", "-P", "--security-opt", "seccomp:unconfined", "-e", "MYSQL_ROOT_PASSWORD=123456", "--name"},
+//		p.Cname+"copy")
+//	//args=append(args,"-v")
+//	for _, v := range p.Vol {
+//		args = append(args, "-v", fmt.Sprintf("%s:%s", v.Src, v.Dst))
+//	}
+//	args = append(args, p.ImageName)
+//	cmd := exec.Command("docker", args...)
+//	if err = cmd.Run(); err != nil {
+//		logrus.Println(err)
+//		return err
+//	}
+//	return nil
+//}

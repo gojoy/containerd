@@ -183,8 +183,8 @@ func (r *remoteMigration) PreRemoteMigration(id, upperid string) error {
 		glog.Println(err)
 		return err
 	}
-	srcip,err=GetIp()
-	if err!=nil {
+	srcip, err = GetIp()
+	if err != nil {
 		glog.Println(err)
 		return err
 	}
@@ -209,15 +209,6 @@ func (r *remoteMigration) PreRemoteMigration(id, upperid string) error {
 	return nil
 }
 
-//func NewRemoteMigration(t *supervisor.MigrationTask,l *localMigration) (*remoteMigration,error)  {
-//	return &remoteMigration{
-//		Bundle:l.Bundle,
-//		CheckpointDir:l.CheckpointDir,
-//		Id:t.Id+"copy",
-//	},nil
-//}
-//
-//
 //func (r *remoteMigration)Dorestore(s *supervisor.Supervisor) error {
 //	e := &supervisor.StartTask{}
 //	e.WithContext(netcontext.Background())

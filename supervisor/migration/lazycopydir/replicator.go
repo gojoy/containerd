@@ -9,9 +9,9 @@ import (
 )
 
 type LazyReplicator struct {
-	MonitorDir string
-	CrawlerDir string
-	LazyDir    string
+	MonitorDir string // upperdir
+	CrawlerDir string //nfsdir
+	LazyDir    string //lazydir
 	List       *JobList
 	ctx        context.Context
 	cancel     context.CancelFunc
@@ -46,14 +46,31 @@ func (l *LazyReplicator) Replicate() error {
 
 	file, err = l.List.Pop()
 	for err == nil {
+
 		sourcedir = filepath.Join(l.CrawlerDir, file)
 		targetdir = filepath.Join(l.LazyDir, file)
-		if err = LocalCopy(sourcedir, targetdir); err != nil {
-			glog.Println(err)
+
+		if isdir(file) {
+			_,err:=os.Stat(targetdir)
+			if os.IsNotExist(err) {
+				os.MkdirAll(targetdir,0755)
+			}
+		} else {
+			if err = LocalCopy(sourcedir, targetdir); err != nil {
+				glog.Println(err)
+			}
 		}
+
 		file, err = l.List.Pop()
 	}
 	return nil
+}
+
+func isdir(v string)bool  {
+	if v[len(v)-1]=='/' {
+		return true
+	}
+	return false
 }
 
 func LocalCopy(source, target string) error {

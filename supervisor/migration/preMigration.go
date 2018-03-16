@@ -3,11 +3,12 @@ package migration
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/containerd/containerd/supervisor/migration/lazycopydir"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
-	"github.com/containerd/containerd/supervisor/migration/lazycopydir"
+	"time"
 )
 
 const preVolume = "/var/lib/migration/mvolume"
@@ -51,14 +52,22 @@ func (p *PreMigrationInTargetMachine) StartPre() error {
 		return err
 	}
 
-	glog.Println("start pre lazy replication")
+	glog.Println("start overlay dir")
 	if err = p.PreLazyDir(); err != nil {
 		glog.Println(err)
 		return err
 	}
 
+	glog.Println("start docker container")
+	if err=p.StartDockerContainer();err!=nil {
+		glog.Println(err)
+		return err
+	}
+
+	glog.Printf("now container start run! %v\n",time.Now())
+
 	glog.Println("start lazycopy")
-	if err=p.StartLazyCopy();err!=nil {
+	if err = p.StartLazyCopy(); err != nil {
 		glog.Println(err)
 		return err
 	}
@@ -100,6 +109,9 @@ func (p *PreMigrationInTargetMachine) CreateDockerContainer() error {
 	var (
 		err error
 	)
+	args1:=append([]string{"rm"},p.Cname+"copy")
+	cmd1:=exec.Command("docker",args1...)
+	cmd1.Run()
 
 	args := append([]string{"create", "-P", "--security-opt", "seccomp:unconfined",
 		"-e", "MYSQL_ROOT_PASSWORD=123456", "--name"},
@@ -116,6 +128,21 @@ func (p *PreMigrationInTargetMachine) CreateDockerContainer() error {
 		glog.Println(err)
 		return err
 	}
+	return nil
+}
+
+func (p *PreMigrationInTargetMachine) StartDockerContainer() error  {
+	name:=p.Cname+"copy"
+	args:=[]string{"start","--checkpoint-dir"}
+	args=append(args,filepath.Join(RemoteCheckpointDir,p.Id+"copy"))
+	args=append(args,"--checkpoint",DumpAll,name)
+	cmd:=exec.Command("docker",args...)
+	glog.Printf("start docker cmd is %v\n",cmd.Args)
+	if err:=cmd.Run();err!=nil {
+		glog.Println(err)
+		return err
+	}
+
 	return nil
 }
 
@@ -152,11 +179,11 @@ func (p *PreMigrationInTargetMachine) CopyUpperDir(imageid string) error {
 
 	dst := tmp[0].GraphDriver.Data.UpperDir
 
-	if src[len(src)-1]!='/' {
-		src=src+"/"
+	if src[len(src)-1] != '/' {
+		src = src + "/"
 	}
 
-	glog.Printf("src is is %v,dst is %v\n", src,tmp[0].GraphDriver.Data.UpperDir)
+	glog.Printf("src is is %v,dst is %v\n", src, tmp[0].GraphDriver.Data.UpperDir)
 
 	if err = CopyDirLocal(src, dst); err != nil {
 		glog.Println(err)
@@ -179,7 +206,7 @@ func (p *PreMigrationInTargetMachine) MountNfs() error {
 		args = append(args, filepath.Join(RemoteGetVolume(p.Id, i), "nfs"))
 
 		cmd := exec.Command("mount", args...)
-		glog.Printf("mount cmd is %v\n",cmd.Args)
+		glog.Printf("mount cmd is %v\n", cmd.Args)
 		if err = cmd.Run(); err != nil {
 			glog.Println(err)
 			return err
@@ -201,11 +228,11 @@ func (p *PreMigrationInTargetMachine) PreLazyDir() error {
 	for i := 0; i < len(p.Vol); i++ {
 		args := []string{"-t", "overlay", "overlay"}
 		l1 := filepath.Join(RemoteGetVolume(p.Id, i), "nfs")
-		l2 := filepath.Join(RemoteGetVolume(p.Id, i), "lazy")
+		//l2 := filepath.Join(RemoteGetVolume(p.Id, i), "lazy")
 		u := filepath.Join(RemoteGetVolume(p.Id, i), "upper")
 		w := filepath.Join(RemoteGetVolume(p.Id, i), "work")
 		m := filepath.Join(RemoteGetVolume(p.Id, i), "merge")
-		lower := fmt.Sprintf("-olowerdir=%s:%s", l1, l2)
+		lower := fmt.Sprintf("-olowerdir=%s", l1)
 		upper := fmt.Sprintf("upperdir=%s", u)
 		work := fmt.Sprintf("workdir=%s", w)
 		other := lower + "," + upper + "," + work
@@ -214,7 +241,7 @@ func (p *PreMigrationInTargetMachine) PreLazyDir() error {
 
 		cmd := exec.Command("mount", args...)
 
-		glog.Printf("overlay cmd is %v\n",cmd.Args)
+		glog.Printf("overlay cmd is %v\n", cmd.Args)
 		if err = cmd.Run(); err != nil {
 			glog.Println(err)
 			return err
@@ -227,20 +254,20 @@ func (p *PreMigrationInTargetMachine) PreLazyDir() error {
 
 func (p *PreMigrationInTargetMachine) StartLazyCopy() error {
 	var (
-		err error
-		crwdir,monidir,lazydir string
+		err                      error
+		crwdir, monidir, lazydir string
 	)
 
-	for i:=0;i<len(p.Vol);i++ {
-		glog.Printf("start lazy vol %d\n",i)
-		crwdir=filepath.Join(RemoteGetVolume(p.Id, i), "nfs")
-		monidir=filepath.Join(RemoteGetVolume(p.Id, i), "upper")
-		lazydir=filepath.Join(RemoteGetVolume(p.Id, i), "lazy")
-		if err=lazycopydir.StartLazyCopy(crwdir,monidir,lazydir);err!=nil {
+	for i := 0; i < len(p.Vol); i++ {
+		glog.Printf("start lazy vol %d\n", i)
+		crwdir = filepath.Join(RemoteGetVolume(p.Id, i), "nfs")
+		monidir = filepath.Join(RemoteGetVolume(p.Id, i), "upper")
+		lazydir = filepath.Join(RemoteGetVolume(p.Id, i), "lazy")
+		if err = lazycopydir.StartLazyCopy(crwdir, monidir, lazydir); err != nil {
 			glog.Println(err)
 			return err
 		}
 	}
-	glog.Println("finish start lazy copy")
+	glog.Printf("finish start lazy copy:%v",time.Now())
 	return nil
 }
