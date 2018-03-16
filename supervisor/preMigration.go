@@ -3,6 +3,7 @@ package supervisor
 import (
 	"github.com/containerd/containerd/supervisor/migration"
 	"github.com/sirupsen/logrus"
+	"time"
 )
 
 const preVolume = "/var/lib/migration/mvolume"
@@ -45,7 +46,7 @@ func (s *Supervisor) PreMigration(t *PreMigrationTask) error {
 		SrcIp:     t.SrcIp,
 	}
 
-	logrus.Println("start preMigration")
+	logrus.Printf("start preMigration at %v\n",time.Now())
 	if err = pre.StartPre(); err != nil {
 		logrus.Printf("start pre in supervisor error:%v\n", err)
 		return err

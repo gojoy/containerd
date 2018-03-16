@@ -24,6 +24,10 @@ type PreMigrationInTargetMachine struct {
 	SrcIp     string
 }
 
+var (
+	lazyreplicator=make([]*lazycopydir.LazyReplicator,0)
+)
+
 func (p *PreMigrationInTargetMachine) StartPre() error {
 	var (
 		err error
@@ -54,6 +58,12 @@ func (p *PreMigrationInTargetMachine) StartPre() error {
 
 	glog.Println("start overlay dir")
 	if err = p.PreLazyDir(); err != nil {
+		glog.Println(err)
+		return err
+	}
+
+	glog.Println("pre lazycopy")
+	if err=p.StartPreLazyCopy();err!=nil {
 		glog.Println(err)
 		return err
 	}
@@ -252,10 +262,11 @@ func (p *PreMigrationInTargetMachine) PreLazyDir() error {
 	return nil
 }
 
-func (p *PreMigrationInTargetMachine) StartLazyCopy() error {
+func (p *PreMigrationInTargetMachine) StartPreLazyCopy() error {
 	var (
 		err                      error
 		crwdir, monidir, lazydir string
+
 	)
 
 	for i := 0; i < len(p.Vol); i++ {
@@ -263,11 +274,27 @@ func (p *PreMigrationInTargetMachine) StartLazyCopy() error {
 		crwdir = filepath.Join(RemoteGetVolume(p.Id, i), "nfs")
 		monidir = filepath.Join(RemoteGetVolume(p.Id, i), "upper")
 		lazydir = filepath.Join(RemoteGetVolume(p.Id, i), "lazy")
-		if err = lazycopydir.StartLazyCopy(crwdir, monidir, lazydir); err != nil {
+		r:=lazycopydir.NewLazyReplicator(crwdir,monidir,lazydir)
+		if err=r.Prelazy();err!=nil {
+			glog.Println(err)
+			return err
+		}
+		lazyreplicator=append(lazyreplicator,r)
+
+	}
+	glog.Printf("finish pre lazy copy:%v",time.Now())
+	return nil
+}
+
+func (p *PreMigrationInTargetMachine) StartLazyCopy() error {
+	var (
+		err error
+	)
+	for _,v:=range lazyreplicator {
+		if err=v.Dolazycopy();err!=nil {
 			glog.Println(err)
 			return err
 		}
 	}
-	glog.Printf("finish start lazy copy:%v",time.Now())
 	return nil
 }
