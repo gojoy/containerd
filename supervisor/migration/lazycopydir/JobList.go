@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 	"sync"
+	"log"
 )
 
 var (
@@ -55,7 +56,7 @@ func (l *JobList) Remove(v string) error {
 		return JobListRemoveEmpty
 	}
 
-	glog.Printf("list remove file %v\n", v)
+	log.Printf("list remove file %v\n", v)
 
 	if len(l.data) == 1 {
 		if l.data[0] == v {
@@ -88,10 +89,10 @@ func (l *JobList) RemoveAllDir(v string) error {
 	l.w.Lock()
 	defer l.w.Unlock()
 
-	if v[len(v)-1] != '\\' {
-		glog.Printf("remove dir error:%v is not a dir\n", v)
+	if v[len(v)-1] != '/' {
+		log.Printf("remove dir error: %v is not a dir\n", v)
 	}
-	glog.Printf("list remove dir %v \n", v)
+	log.Printf("list remove dir %v \n", v)
 	if len(l.data) == 0 {
 		return JobListRemoveEmpty
 	}

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"log"
 )
 
 type LazyReplicator struct {
@@ -45,8 +46,8 @@ func (l *LazyReplicator) Replicate() error {
 	)
 
 	file, err = l.List.Pop()
+	log.Printf("first file is %v,len is %v\n", file, len(l.List.data))
 	for err == nil {
-
 		sourcedir = filepath.Join(l.CrawlerDir, file)
 		targetdir = filepath.Join(l.LazyDir, file)
 
@@ -57,11 +58,11 @@ func (l *LazyReplicator) Replicate() error {
 			}
 		} else {
 			if err = LocalCopy(sourcedir, targetdir); err != nil {
-				glog.Println(err)
+				log.Println(err)
 			}
 		}
-
 		file, err = l.List.Pop()
+		log.Printf("next file is %v,len is %v\n", file, len(l.List.data))
 	}
 	return nil
 }
@@ -80,22 +81,22 @@ func LocalCopy(source, target string) error {
 	)
 
 	if _, err = os.Stat(target); err == nil {
-		glog.Printf("target %v exist,don't copy\n", target)
-		return nil
+		log.Printf("target %v exist,don't copy\n", target)
+		return err
 	}
 	if !os.IsNotExist(err) {
 		return fmt.Errorf("Copy Error:%v\n", err)
 	}
 	if err = os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 	if src, err = os.Open(source); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 	if dst, err = os.Create(target); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 	defer func() {
@@ -104,5 +105,6 @@ func LocalCopy(source, target string) error {
 	}()
 
 	_, err = io.Copy(dst, src)
+	log.Printf("now copy %v\n", target)
 	return err
 }

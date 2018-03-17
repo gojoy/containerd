@@ -7,18 +7,18 @@ import (
 	"path/filepath"
 )
 
-var (
-	glog *log.Logger
-)
-
-func init() {
-	glog = log.New(os.Stderr, "lazyCopyLog: ", log.Lshortfile)
-}
+//var (
+//	log *log.Logger
+//)
+//
+//func init() {
+//	log = log.New(os.Stderr, "lazyCopyLog: ", log.Lshortfile)
+//}
 
 func (l *LazyReplicator) Crawler() error {
 
 	if len(l.List.data) > 0 {
-		glog.Println("crawler should start with empty joblist")
+		log.Println("crawler should start with empty joblist")
 		_, err := l.List.Pop()
 		for err != JobListPopError {
 			_, err = l.List.Pop()
@@ -36,18 +36,18 @@ func CrawlerAllFiles(dir string, list *JobList) error {
 	)
 
 	if tmpdir, err = os.Getwd(); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 
 	defer func() {
 		if err = os.Chdir(tmpdir); err != nil {
-			glog.Fatalln(err)
+			log.Fatalln(err)
 		}
 	}()
 
 	if err = os.Chdir(dir); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 
@@ -55,7 +55,7 @@ func CrawlerAllFiles(dir string, list *JobList) error {
 	if err = filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 
 		if err != nil {
-			glog.Println(err)
+			log.Println(err)
 			return err
 		}
 
@@ -66,8 +66,9 @@ func CrawlerAllFiles(dir string, list *JobList) error {
 		}
 		return nil
 	}); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
+	list.Pop()
 	return nil
 }

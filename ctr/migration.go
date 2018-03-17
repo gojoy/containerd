@@ -12,7 +12,7 @@ var migrationCommand = cli.Command{
 	Name:  "migration",
 	Usage: "migration containers",
 	ArgsUsage: "-H <ip> -p <port> -A <args> <container-id> ||" +
-		" 192.168.18.2 9001 -A -e MYSQL_ROOT_PASSWORD=123456 mysql",
+		" 192.168.18.2 9001 -A -e,MYSQL_ROOT_PASSWORD=123456 mysql",
 	Flags: []cli.Flag{
 		cli.StringFlag{
 			Name:  "host,H",

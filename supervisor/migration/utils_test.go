@@ -178,7 +178,7 @@ func TestCopyUpperDir(t *testing.T) {
 	}
 	//err:=p.CreateDockerContainer()
 	//if err!=nil {
-	//	glog.Println(err)
+	//	log.Println(err)
 	//	t.FailNow()
 	//	return
 	//}
@@ -186,7 +186,7 @@ func TestCopyUpperDir(t *testing.T) {
 	if src[len(src)-1] != '/' {
 		src = src + "/"
 	}
-	glog.Printf("src is %v\n", src)
+	log.Printf("src is %v\n", src)
 	return
 }
 
@@ -203,10 +203,10 @@ func TestGetIp(t *testing.T) {
 func TestGetCName(t *testing.T) {
 	c, err := GetCName("895fcefdab76")
 	if err != nil {
-		glog.Println(err)
+		log.Println(err)
 		t.FailNow()
 		return
 	}
-	glog.Printf("cname is %v\n", c)
+	log.Printf("cname is %v\n", c)
 	return
 }

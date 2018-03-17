@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+	"log"
 )
 
 const preVolume = "/var/lib/migration/mvolume"
@@ -38,58 +39,58 @@ func (p *PreMigrationInTargetMachine) StartPre() error {
 		goto CREATCONT
 	}
 
-	glog.Println("premkdir")
+	log.Println("premkdir")
 	if err = p.PreMkVolDir(); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 
 CREATCONT:
-	glog.Println("create docker container")
+	log.Println("create docker container")
 	if err = p.CreateDockerContainer(); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 
-	glog.Println("copy upperdir")
+	log.Println("copy upperdir")
 	if err = p.CopyUpperDir(p.UpperId); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 	if len(p.Vol) == 0 {
 		goto STARTCONT
 	}
 
-	glog.Println("mount nfs")
+	log.Println("mount nfs")
 	if err = p.MountNfs(); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 
-	glog.Println("start overlay dir")
+	log.Println("start overlay dir")
 	if err = p.PreLazyDir(); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 
-	glog.Println("pre lazycopy")
+	log.Println("pre lazycopy")
 	if err = p.StartPreLazyCopy(); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 
 STARTCONT:
-	glog.Println("start docker container")
+	log.Println("start docker container")
 	if err = p.StartDockerContainer(); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 
-	glog.Printf("now container start run! %v\n", time.Now())
+	log.Printf("now container start run! %v\n", time.Now())
 
-	glog.Println("start lazycopy")
+	log.Println("start lazycopy")
 	if err = p.StartLazyCopy(); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 	return nil
@@ -99,26 +100,27 @@ func (p *PreMigrationInTargetMachine) PreMkVolDir() error {
 	var (
 		err error
 	)
+	os.RemoveAll(filepath.Join(preVolume,p.Id))
 	for i := 0; i < len(p.Vol); i++ {
 		tpath := filepath.Join(preVolume, p.Id, strconv.Itoa(i))
 		if err = os.MkdirAll(filepath.Join(tpath, "lazy"), 0755); err != nil {
-			glog.Println(err)
+			log.Println(err)
 			return err
 		}
 		if err = os.MkdirAll(filepath.Join(tpath, "upper"), 0755); err != nil {
-			glog.Println(err)
+			log.Println(err)
 			return err
 		}
 		if err = os.MkdirAll(filepath.Join(tpath, "work"), 0755); err != nil {
-			glog.Println(err)
+			log.Println(err)
 			return err
 		}
 		if err = os.MkdirAll(filepath.Join(tpath, "merge"), 0755); err != nil {
-			glog.Println(err)
+			log.Println(err)
 			return err
 		}
 		if err = os.MkdirAll(filepath.Join(tpath, "nfs"), 0755); err != nil {
-			glog.Println(err)
+			log.Println(err)
 			return err
 		}
 	}
@@ -130,7 +132,7 @@ func (p *PreMigrationInTargetMachine) CreateDockerContainer() error {
 	var (
 		err error
 	)
-	args1 := append([]string{"rm"}, p.Cname+"copy")
+	args1 := append([]string{"rm", "-f"}, p.Cname+"copy")
 	cmd1 := exec.Command("docker", args1...)
 	cmd1.Run()
 
@@ -148,9 +150,9 @@ func (p *PreMigrationInTargetMachine) CreateDockerContainer() error {
 
 	args = append(args, p.ImageName)
 	cmd := exec.Command("docker", args...)
-	glog.Printf("create cmd is %v\n", cmd.Args)
+	log.Printf("create cmd is %v\n", cmd.Args)
 	if err = cmd.Run(); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 	return nil
@@ -162,9 +164,9 @@ func (p *PreMigrationInTargetMachine) StartDockerContainer() error {
 	args = append(args, filepath.Join(RemoteCheckpointDir, p.Id+"copy"))
 	args = append(args, "--checkpoint", DumpAll, name)
 	cmd := exec.Command("docker", args...)
-	glog.Printf("start docker cmd is %v\n", cmd.Args)
+	log.Printf("start docker cmd is %v\n", cmd.Args)
 	if err := cmd.Run(); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 
@@ -181,10 +183,10 @@ func (p *PreMigrationInTargetMachine) CopyUpperDir(imageid string) error {
 	)
 
 	src := filepath.Join(remoteUpperDir, imageid, "diff")
-	//glog.Printf("imageid is %v\n",imageid)
+	//log.Printf("imageid is %v\n",imageid)
 	_, err = os.Stat(src)
 	if err != nil {
-		glog.Printf("Remote Don't Has  Upperdir %v:", err)
+		log.Printf("Remote Don't Has  Upperdir %v:", err)
 		//return err
 	}
 
@@ -193,12 +195,12 @@ func (p *PreMigrationInTargetMachine) CopyUpperDir(imageid string) error {
 
 	bs, err := cmd.Output()
 	if err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 
 	if err = json.Unmarshal(bs, &tmp); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 
@@ -208,10 +210,10 @@ func (p *PreMigrationInTargetMachine) CopyUpperDir(imageid string) error {
 		src = src + "/"
 	}
 
-	glog.Printf("src is is %v,dst is %v\n", src, tmp[0].GraphDriver.Data.UpperDir)
+	log.Printf("src is is %v,dst is %v\n", src, tmp[0].GraphDriver.Data.UpperDir)
 
 	if err = CopyDirLocal(src, dst); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 
@@ -231,9 +233,9 @@ func (p *PreMigrationInTargetMachine) MountNfs() error {
 		args = append(args, filepath.Join(RemoteGetVolume(p.Id, i), "nfs"))
 
 		cmd := exec.Command("mount", args...)
-		glog.Printf("mount cmd is %v\n", cmd.Args)
+		log.Printf("mount cmd is %v\n", cmd.Args)
 		if err = cmd.Run(); err != nil {
-			glog.Println(err)
+			log.Println(err)
 			return err
 		}
 	}
@@ -266,13 +268,13 @@ func (p *PreMigrationInTargetMachine) PreLazyDir() error {
 
 		cmd := exec.Command("mount", args...)
 
-		glog.Printf("overlay cmd is %v\n", cmd.Args)
+		log.Printf("overlay cmd is %v\n", cmd.Args)
 		if err = cmd.Run(); err != nil {
-			glog.Println(err)
+			log.Println(err)
 			return err
 		}
 
-		//glog.Println(cmd.Args)
+		//log.Println(cmd.Args)
 	}
 	return nil
 }
@@ -284,19 +286,19 @@ func (p *PreMigrationInTargetMachine) StartPreLazyCopy() error {
 	)
 
 	for i := 0; i < len(p.Vol); i++ {
-		glog.Printf("start lazy vol %d\n", i)
+		log.Printf("start lazy vol %d\n", i)
 		crwdir = filepath.Join(RemoteGetVolume(p.Id, i), "nfs")
 		monidir = filepath.Join(RemoteGetVolume(p.Id, i), "upper")
 		lazydir = filepath.Join(RemoteGetVolume(p.Id, i), "lazy")
 		r := lazycopydir.NewLazyReplicator(crwdir, monidir, lazydir)
 		if err = r.Prelazy(); err != nil {
-			glog.Println(err)
+			log.Println(err)
 			return err
 		}
 		lazyreplicator = append(lazyreplicator, r)
 
 	}
-	glog.Printf("finish pre lazy copy:%v", time.Now())
+	log.Printf("finish pre lazy copy:%v", time.Now())
 	return nil
 }
 
@@ -306,7 +308,7 @@ func (p *PreMigrationInTargetMachine) StartLazyCopy() error {
 	)
 	for _, v := range lazyreplicator {
 		if err = v.Dolazycopy(); err != nil {
-			glog.Println(err)
+			log.Println(err)
 			return err
 		}
 	}

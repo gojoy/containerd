@@ -7,6 +7,7 @@ import (
 	//"github.com/containerd/containerd/supervisor"
 	"errors"
 	"fmt"
+	"log"
 )
 
 const MigrationDir = "/run/migration"
@@ -72,7 +73,7 @@ func (l *localMigration) DoCheckpoint() error {
 		if err = os.RemoveAll(ldir); err != nil {
 			return err
 		}
-		glog.Println("checkpoint dir exist,we remove it")
+		log.Println("checkpoint dir exist,we remove it")
 	}
 
 	return l.Checkpoint(doCheckpoint, l.CheckpointDir)
@@ -99,7 +100,7 @@ func (l *localMigration) CopyUpperToRemote(r *remoteMigration) error {
 	}
 
 	if err = RemoteMkdirAll(remoteUpperDir, r.sftpClient); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 
@@ -115,17 +116,18 @@ func (l *localMigration) CopyCheckPointToRemote(r *remoteMigration) error {
 		return fmt.Errorf("Err: remote nil\n ")
 	}
 
+
 	if err := RemoteMkdirAll(r.CheckpointDir, r.sftpClient); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 	if err := RemoteCopyDirRsync(l.CheckpointDir, r.CheckpointDir, r.ip); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 
 	//if err := RemoteCopyDir(l.CheckpointDir, r.CheckpointDir, r.sftpClient); err != nil {
-	//	glog.Println(err)
+	//	log.Println(err)
 	//	return err
 	//}
 	return nil
@@ -142,24 +144,24 @@ func (l *localMigration) CopyCheckPointToRemote(r *remoteMigration) error {
 //		return false, err
 //	}
 //	if len(spec.Mounts) == 0 {
-//		glog.Println(spec.Mounts)
+//		log.Println(spec.Mounts)
 //		return false, errors.New("nfs error: no mounts\n")
 //	}
 //
 //	//f,err:=os.Open("/etc/export")
 //	f, err := os.OpenFile("/etc/exports", os.O_RDWR|os.O_APPEND, 0666)
 //	if err != nil {
-//		glog.Println(err)
+//		log.Println(err)
 //		return true, err
 //	}
 //	defer f.Close()
 //
 //	for _, v := range spec.Mounts {
-//		glog.Printf("type is %v,optionsis %v,dst is %v\n", v.Type, v.Options, v.Destination)
+//		log.Printf("type is %v,optionsis %v,dst is %v\n", v.Type, v.Options, v.Destination)
 //		if v.Type == "bind" && len(v.Options) == 1 && v.Options[0] == "rbind" {
 //			count++
 //			if _, err = fmt.Fprintf(f, "%s %s", v.Source, nfsconfig); err != nil {
-//				glog.Println(err)
+//				log.Println(err)
 //				return true, err
 //			}
 //		}
@@ -178,14 +180,14 @@ func (l *localMigration) SetNfsExport() error {
 
 	vol, err := GetVolume(l.ID())
 	if err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 	if len(vol) == 0 {
 		return nil
 	}
 	if err = SetNfsExport(vol); err != nil {
-		glog.Println(err)
+		log.Println(err)
 
 	}
 	return err

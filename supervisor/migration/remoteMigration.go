@@ -6,11 +6,12 @@ import (
 	"github.com/containerd/containerd/api/grpc/types"
 	"github.com/containerd/containerd/specs"
 	"github.com/pkg/sftp"
-	"github.com/sirupsen/logrus"
+	//"github.com/sirupsen/log"
 	netcontext "golang.org/x/net/context"
 	"os"
 	"path/filepath"
 	"time"
+	"log"
 )
 
 //const RemoteOverlay="/var/lib/migration/overlay/diff-id.." 远程主机的镜像层文件目录
@@ -38,13 +39,13 @@ type remoteMigration struct {
 
 func NewRemoteMigration(ip, id string, port uint32) (*remoteMigration, error) {
 
-	logrus.Println("get grpc client")
+	log.Println("get grpc client")
 	c, err := GetClient(ip, port)
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Println("get sftp client")
+	log.Println("get sftp client")
 	sc, err := GetSftpClient(LoginUser, LoginPasswd, ip, SftpPort)
 	if err != nil {
 		return nil, err
@@ -67,7 +68,7 @@ func NewRemoteMigration(ip, id string, port uint32) (*remoteMigration, error) {
 func (r *remoteMigration) DoRestore() error {
 
 	//just log it,do nothing
-	glog.Println("Do Remote Restore")
+	log.Println("Do Remote Restore")
 	return nil
 
 	bpath, err := filepath.Abs(r.Bundle)
@@ -87,7 +88,7 @@ func (r *remoteMigration) DoRestore() error {
 
 	//runc create
 	if _, err = r.clienApi.CreateContainer(netcontext.Background(), req); err != nil {
-		logrus.Printf("remote restore err:%v\n", err)
+		log.Printf("remote restore err:%v\n", err)
 		return err
 	}
 	time.Sleep(2 * time.Second)
@@ -104,13 +105,13 @@ func (r *remoteMigration) DoRestore() error {
 
 func (r *remoteMigration) PreLoadImage(e chan error, image *Image) {
 
-	//glog.Println("start precopy image")
+	//log.Println("start precopy image")
 	//err := image.PreCopyImage(r.sftpClient, r)
 	//if err != nil {
-	//	glog.Println(err)
+	//	log.Println(err)
 	//}
 	var err error = nil
-	glog.Println("we do nothing,just return to main goroutine")
+	log.Println("we do nothing,just return to main goroutine")
 	e <- err
 
 }
@@ -122,7 +123,7 @@ func (r *remoteMigration) SetSpec(l *localMigration) error {
 	}
 	rspec, err := LoadSpec(l.Container)
 	if err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 	//rspec.Root.Path = r.Rootfs
@@ -134,34 +135,34 @@ func (r *remoteMigration) SetSpec(l *localMigration) error {
 		if err == os.ErrNotExist {
 
 			if err = RemoteMkdirAll(rfile, r.sftpClient); err != nil {
-				glog.Println(err)
+				log.Println(err)
 				return err
 			}
 
 			if specf, err := r.sftpClient.Create(rfile); err != nil {
-				glog.Println(err)
+				log.Println(err)
 				return err
 			} else {
 				if err = json.NewEncoder(specf).Encode(rspec); err != nil {
-					glog.Println(err)
+					log.Println(err)
 					return err
 				}
 			}
 
 		} else {
-			glog.Println(err)
+			log.Println(err)
 			return err
 		}
 	}
 
-	//glog.Println("Remote Has Config.json\n")
+	//log.Println("Remote Has Config.json\n")
 	return nil
 }
 
 //向目的主机发送grpc请求
 func (r *remoteMigration) PreRemoteMigration(id, upperid string, args []string) error {
 
-	//glog.Printf("upperid is %v\n",upperid)
+	//log.Printf("upperid is %v\n",upperid)
 	var (
 		err                     error
 		Id                      = id
@@ -170,22 +171,22 @@ func (r *remoteMigration) PreRemoteMigration(id, upperid string, args []string) 
 	)
 	vol, err = GetVolume(Id)
 	if err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 	imagename, err = GetImage(Id)
 	if err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 	Cname, err = GetCName(Id)
 	if err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 	srcip, err = GetIp()
 	if err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 
@@ -204,7 +205,7 @@ func (r *remoteMigration) PreRemoteMigration(id, upperid string, args []string) 
 	preRequest.Vol = pvol
 
 	if _, err = r.clienApi.PreMigration(netcontext.Background(), preRequest); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 	return nil
@@ -224,10 +225,10 @@ func (r *remoteMigration) PreRemoteMigration(id, upperid string, args []string) 
 //	e.Stderr="/dev/null"
 //	e.BundlePath=r.Bundle
 //	e.StartResponse = make(chan supervisor.StartResponse, 1)
-//	logrus.Println("restore send task")
+//	log.Println("restore send task")
 //	s.SendTask(e)
 //	if err := <-e.ErrorCh(); err != nil {
-//		logrus.Println(err)
+//		log.Println(err)
 //		return  err
 //	}
 //	<-e.StartResponse

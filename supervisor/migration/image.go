@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"log"
 )
 
 const Driver = "overlay2"
@@ -110,18 +111,18 @@ func (i *Image) CopyUpper(c *sftp.Client) error {
 	mudir := i.upperRD[:len(i.upperRD)-5]
 	remoteDir, err := PathToRemote(mudir)
 	if err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 
-	glog.Printf("copy upper dir %v\n", mudir)
+	log.Printf("copy upper dir %v\n", mudir)
 
 	if err = RemoteCopyDir(filepath.Join(mudir, "diff"), filepath.Join(remoteDir, "diff"), c); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 	if err = RemoteCopyDir(filepath.Join(mudir, "lower"), filepath.Join(remoteDir, "lower"), c); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 	return nil
@@ -135,7 +136,7 @@ func (i *Image) PreCopyImage(c *sftp.Client, r *remoteMigration) error {
 		if err != nil {
 			return err
 		}
-		//glog.Printf("v :%v,r %v\n", v, remotePath)
+		//log.Printf("v :%v,r %v\n", v, remotePath)
 		_, err = c.Stat(remotePath)
 		if err != nil {
 			//TODO 远程不存在该文件，则传输过去
@@ -151,7 +152,7 @@ func (i *Image) PreCopyImage(c *sftp.Client, r *remoteMigration) error {
 				return err
 			}
 		}
-		//glog.Printf("remote has dir,so not copy:%v\n",w.Name())
+		//log.Printf("remote has dir,so not copy:%v\n",w.Name())
 
 	}
 	return nil

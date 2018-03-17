@@ -2,8 +2,8 @@ package supervisor
 
 import (
 	"github.com/containerd/containerd/supervisor/migration"
-	"github.com/sirupsen/logrus"
 	"time"
+	"log"
 )
 
 const preVolume = "/var/lib/migration/mvolume"
@@ -48,9 +48,9 @@ func (s *Supervisor) PreMigration(t *PreMigrationTask) error {
 		Args:      t.Args,
 	}
 
-	logrus.Printf("start preMigration at %v\n", time.Now())
+	log.Printf("start preMigration at %v\n", time.Now())
 	if err = pre.StartPre(); err != nil {
-		logrus.Printf("start pre in supervisor error:%v\n", err)
+		log.Printf("start pre in supervisor error:%v\n", err)
 		return err
 	}
 
@@ -71,7 +71,7 @@ func (s *Supervisor) PreMigration(t *PreMigrationTask) error {
 //	args = append(args, p.ImageName)
 //	cmd := exec.Command("docker", args...)
 //	if err = cmd.Run(); err != nil {
-//		logrus.Println(err)
+//		log.Println(err)
 //		return err
 //	}
 //	return nil

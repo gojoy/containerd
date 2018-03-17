@@ -5,6 +5,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"os"
 	"path/filepath"
+	"log"
 )
 
 func (l *LazyReplicator) Monitor() error {
@@ -19,28 +20,28 @@ func MonitorDir(dir string, list *JobList, ctx context.Context, crawdir string) 
 	)
 
 	if w, err = fsnotify.NewWatcher(); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 
 	//monitor monidir,remove updated file from list
 	if err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			glog.Println(err)
+			log.Println(err)
 			return err
 		}
 		//add all dir to watch list
 		if info.IsDir() {
 			if err = w.Add(path); err != nil {
-				glog.Println(err)
+				log.Println(err)
 				return err
 			}
-			glog.Printf("add %v to monitor lists\n", path)
+			log.Printf("add %v to monitor lists\n", path)
 		}
 
 		return nil
 	}); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 
@@ -53,12 +54,12 @@ func MonitorDir(dir string, list *JobList, ctx context.Context, crawdir string) 
 				info, err := os.Stat(events.Name)
 				if err == nil && info.IsDir() {
 					if err = w.Add(events.Name); err != nil {
-						glog.Println(err)
+						log.Println(err)
 					}
 				}
 
 				if addpath, err = filepath.Rel(dir, events.Name); err != nil {
-					glog.Printf("Rel err:%v\n", err)
+					log.Printf("Rel err:%v\n", err)
 
 				} else {
 					if isDir(addpath, crawdir) {
@@ -69,10 +70,10 @@ func MonitorDir(dir string, list *JobList, ctx context.Context, crawdir string) 
 					} else {
 
 						if err = list.Remove(addpath); err != nil {
-							glog.Println(err)
+							log.Println(err)
 						}
 					}
-
+					log.Printf("remove %v,now len is %v\n",addpath,len(list.data))
 				}
 			}
 
@@ -81,7 +82,7 @@ func MonitorDir(dir string, list *JobList, ctx context.Context, crawdir string) 
 				info, err := os.Stat(events.Name)
 				if err == nil && info.IsDir() {
 					if err = w.Remove(events.Name); err != nil {
-						glog.Println(err)
+						log.Println(err)
 					}
 				}
 
@@ -90,10 +91,10 @@ func MonitorDir(dir string, list *JobList, ctx context.Context, crawdir string) 
 		case err = <-w.Errors:
 			if err != nil {
 				//只打印出错误，继续监视
-				glog.Println(err)
+				log.Println(err)
 			}
 		case <-ctx.Done():
-			glog.Println("Exist Monitor")
+			log.Println("Exist Monitor")
 			goto End
 		}
 	}
@@ -101,7 +102,7 @@ func MonitorDir(dir string, list *JobList, ctx context.Context, crawdir string) 
 	goto End
 
 End:
-	glog.Println("Monitor End")
+	log.Println("Monitor End")
 	return w.Close()
 }
 

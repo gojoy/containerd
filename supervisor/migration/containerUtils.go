@@ -22,13 +22,13 @@ import (
 	"time"
 )
 
-var (
-	glog *log.Logger
-)
-
-func init() {
-	glog = log.New(os.Stderr, "", log.Lshortfile)
-}
+//var (
+//	log *log.Logger
+//)
+//
+//func init() {
+//	log = log.New(os.Stderr, "", log.Lshortfile)
+//}
 
 func LoadSpec(c runtime.Container) (*specs.Spec, error) {
 	var spec specs.Spec
@@ -107,7 +107,7 @@ func RemoteCopyDir(localPath, remotePath string, c *sftp.Client) error {
 	)
 
 	if _, err = c.Stat(remotePath); err == nil {
-		glog.Printf("remote has %v,we do not copy it", remotePath)
+		log.Printf("remote has %v,we do not copy it", remotePath)
 		return nil
 	}
 
@@ -131,7 +131,7 @@ func RemoteCopyDir(localPath, remotePath string, c *sftp.Client) error {
 
 			if err = c.Mkdir(rpath); err != nil {
 				//panic(err)
-				glog.Println(err)
+				log.Println(err)
 				return err
 			}
 
@@ -151,14 +151,14 @@ func RemoteCopyDir(localPath, remotePath string, c *sftp.Client) error {
 			_, err = io.CopyBuffer(dstf, srcf, buf)
 			if err != nil {
 				//panic(err)
-				glog.Println(err)
+				log.Println(err)
 				return err
 			}
 		}
 		return nil
 	})
 	if err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 	return nil
@@ -177,13 +177,13 @@ func RemoteCopyDirRsync(local, remote string, ip string) error {
 	}
 
 	args := append([]string{"-azv"}, local, "root@"+ip+":"+remote)
-	//glog.Printf("l is %v,r is %v,args is %v\n",local,remote,args)
+	//log.Printf("l is %v,r is %v,args is %v\n",local,remote,args)
 
 	cmd := exec.Command("rsync", args...)
-	//glog.Printf("cmd is %v\n",cmd)
+	//log.Printf("cmd is %v\n",cmd)
 	if err = cmd.Run(); err != nil {
-		glog.Printf("rsync error:%v\n", err)
-		glog.Printf("cmd is %v\n", cmd.Args)
+		log.Printf("rsync error:%v\n", err)
+		log.Printf("cmd is %v\n", cmd.Args)
 	}
 	return err
 }
@@ -197,10 +197,10 @@ func CopyDirLocal(src, dst string) error {
 	args := append([]string{"-azv"}, local, remote)
 
 	cmd := exec.Command("rsync", args...)
-	//glog.Printf("cmd is %v\n",cmd)
+	//log.Printf("cmd is %v\n",cmd)
 	if err = cmd.Run(); err != nil {
-		glog.Printf("rsync error:%v\n", err)
-		glog.Printf("cmd is %v\n", cmd.Args)
+		log.Printf("rsync error:%v\n", err)
+		log.Printf("cmd is %v\n", cmd.Args)
 	}
 	return err
 
@@ -216,12 +216,12 @@ func RemoteMkdirAll(rpath string, c *sftp.Client) error {
 
 		if _, err := c.Stat(root); err != nil {
 			if err == os.ErrNotExist {
-				//glog.Printf("dir %v not exist,we create it\n",root)
+				//log.Printf("dir %v not exist,we create it\n",root)
 				if err := c.Mkdir(root); err != nil {
 					return err
 				}
 			} else {
-				glog.Println(err)
+				log.Println(err)
 				return err
 			}
 		}
@@ -245,25 +245,25 @@ func GetVolume(id string) ([]Volumes, error) {
 
 	bs, err := cmd.Output()
 	if err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return nil, err
 	}
 
 	if err = json.Unmarshal(bs, &vl); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return nil, err
 	}
 
 	if len(vl) != 1 {
-		glog.Println("len !=1 ")
+		log.Println("len !=1 ")
 		return nil, errors.New("inspect not one\n")
 	}
 
 	for _, v := range vl[0].HostConfig.Binds {
 		sp := strings.Split(v, ":")
 		if len(sp) != 2 {
-			glog.Println("splite false")
-			glog.Println(sp)
+			log.Println("splite false")
+			log.Println(sp)
 			return nil, errors.New("split error\n")
 		}
 		res = append(res, struct{ src, dst string }{src: sp[0], dst: sp[1]})
@@ -281,12 +281,12 @@ func GetCName(id string) (string, error) {
 	cmd := exec.Command("docker", args...)
 	bs, err := cmd.Output()
 	if err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return "", err
 	}
 
 	if err = json.Unmarshal(bs, &tmp); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return "", err
 	}
 	name := tmp[0].Name
@@ -310,12 +310,12 @@ func GetImage(id string) (string, error) {
 
 	bs, err := cmd.Output()
 	if err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return res, err
 	}
 
 	if err = json.Unmarshal(bs, &tmp); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return res, err
 	}
 
@@ -328,14 +328,14 @@ func SetNfsExport(vol []Volumes) error {
 
 	f, err := os.OpenFile("/etc/exports", os.O_RDWR|os.O_APPEND, 0666)
 	if err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 	defer f.Close()
 
 	for _, v := range vol {
 		if _, err = fmt.Fprintf(f, "%s %s\n", v.src, nfsconfig); err != nil {
-			glog.Println(err)
+			log.Println(err)
 			return err
 		}
 	}
@@ -343,7 +343,7 @@ func SetNfsExport(vol []Volumes) error {
 	f.Sync()
 
 	if err = FlushNfsConfig(); err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return err
 	}
 	return nil
@@ -356,14 +356,14 @@ func GetIp() (string, error) {
 	)
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		glog.Println(err)
+		log.Println(err)
 		return "", err
 	}
 	for _, address := range addrs {
 
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
-				//glog.Printf("ip is %v\n", ipnet.IP.String())
+				//log.Printf("ip is %v\n", ipnet.IP.String())
 				return ipnet.IP.String(), nil
 			}
 		}

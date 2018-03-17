@@ -6,13 +6,19 @@ import (
 	"github.com/containerd/containerd/api/grpc/types"
 	"github.com/containerd/containerd/runtime"
 	"github.com/containerd/containerd/supervisor/migration"
-	"github.com/sirupsen/logrus"
-	"log"
+	"io"
 	"net"
 	"os"
 	"strings"
 	"time"
+	"log"
 )
+
+const (
+	TimeLogPos = "/run/migration/time.log"
+	TimeLogPath="/run/migration"
+)
+
 
 //
 type MigrationTask struct {
@@ -27,55 +33,57 @@ type TargetMachine struct {
 	Port uint32
 }
 
-var (
-	TimeLogger *log.Logger
-	TimeLogPos = "/run/migration/time.log"
-)
+type doubleLoger struct {
+	w io.Writer
+}
 
-func (s *Supervisor) StartMigration(t *MigrationTask) error {
-	logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp:true})
+func (d *doubleLoger) Write(p []byte) (n int, err error) {
+	os.Stderr.Write(p)
+	return d.w.Write(p)
+}
+
+func NewDoubleLoger(f io.Writer) io.Writer {
+	return &doubleLoger{w: f}
+}
+
+func init() {
+
+	log.SetFlags(log.Lmicroseconds|log.Lshortfile)
+	log.SetPrefix("Migration log:")
+	os.MkdirAll(TimeLogPath, 0755)
 	f, err := os.OpenFile(TimeLogPos, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 	if err != nil {
-		logrus.Printf("set timelog err:%v\n", err)
-		return err
+		log.Printf("set timelog err:%v\n", err)
+		panic(err)
 	}
+	//log.SetOutput(NewDoubleLoger(f))
+	log.SetOutput(NewDoubleLoger(f))
+}
 
-	TimeLogger = log.New(f, "TimeLog:  ", log.LUTC|log.Lshortfile)
-
-	defer f.Close()
-
-	//c, err := t.checkContainers(s)
-	//if err != nil {
-	//	logrus.Println(err)
-	//	return err
-	//}
-	//
-	//if err = t.checkTargetMachine(); err != nil {
-	//	return err
-	//}
+func (s *Supervisor) StartMigration(t *MigrationTask) error {
 
 	c, _, err := t.PerMigrationTask(s)
 	if err != nil {
-		logrus.Printf("premigration faild:%v\n", err)
+		log.Printf("premigration faild:%v\n", err)
 		return err
 	}
 
 	if err = t.startMigrationTask(c); err != nil {
-		logrus.Println("start error: ", err)
+		log.Println("start error: ", err)
 		return err
 	}
 
-	logrus.Println("migration Finish")
+	log.Println("migration Finish")
 	return nil
 }
 
 func (t *MigrationTask) PerMigrationTask(s *Supervisor) (*containerInfo, types.APIClient, error) {
 	start := time.Now()
-	TimeLogger.Printf("start premigration task at %v\n", start.String())
+	log.Printf("start premigration task at %v\n", start.String())
 
 	c, err := t.checkContainers(s)
 	if err != nil {
-		logrus.Println(err)
+		log.Println(err)
 		return nil, nil, err
 	}
 
@@ -85,14 +93,14 @@ func (t *MigrationTask) PerMigrationTask(s *Supervisor) (*containerInfo, types.A
 	}
 
 	end := time.Now()
-	TimeLogger.Printf("end premigration task at %v\n", end.String())
-	TimeLogger.Printf("pre migration task cost %v\n", end.Sub(start).String())
+	log.Printf("end premigration task at %v\n", end.String())
+	log.Printf("pre migration task cost %v\n", end.Sub(start).String())
 	return c, rpclient, nil
 }
 
 func (t *MigrationTask) checkContainers(s *Supervisor) (*containerInfo, error) {
 
-	logrus.Println("check containers exist")
+	log.Println("check containers exist")
 
 	i, ok := s.containers[t.Id]
 	if !ok {
@@ -106,7 +114,7 @@ func (t *MigrationTask) checkContainers(s *Supervisor) (*containerInfo, error) {
 
 func (t *MigrationTask) checkTargetMachine() (types.APIClient, error) {
 
-	logrus.Println("check target machine")
+	log.Println("check target machine")
 
 	ip := t.Host
 	port := t.Port
@@ -132,36 +140,36 @@ func (t *MigrationTask) checkTargetMachine() (types.APIClient, error) {
 
 func (t *MigrationTask) startMigrationTask(c *containerInfo) error {
 	start := time.Now()
-	TimeLogger.Printf("start migration task at %v\n", start.String())
+	log.Printf("start migration task at %v\n", start.String())
 
 	var (
 		e   = make(chan error)
 		err error
 	)
 
-	logrus.Println("new local")
+	log.Println("new local")
 	l, err := migration.NewLocalMigration(c.container)
 	if err != nil {
 		return MigrationWriteErr(err.Error())
 	}
 
-	logrus.Println("new remote")
+	log.Println("new remote")
 	r, err := migration.NewRemoteMigration(t.Host, t.Id, t.Port)
 	if err != nil {
 		return MigrationWriteErr(err.Error())
 	}
 
-	logrus.Println("start preload image in goroutine")
+	log.Println("start preload image in goroutine")
 	go r.PreLoadImage(e, l.Imagedir)
 
 	//TODO 将hostpath的目录nfs到远程挂载 准备在本机的工作
-	logrus.Println("start nfs hostpath")
+	log.Println("start nfs hostpath")
 	if err = l.SetNfsExport(); err != nil {
-		logrus.Println("nfs", err)
+		log.Println("nfs", err)
 		return err
 	}
 
-	logrus.Println("set spec")
+	log.Println("set spec")
 	if err = r.SetSpec(l); err != nil {
 		return err
 	}
@@ -169,9 +177,9 @@ func (t *MigrationTask) startMigrationTask(c *containerInfo) error {
 	if err = <-e; err != nil {
 		return MigrationWriteErr(err.Error())
 	}
-	logrus.Println("wait goroutines finish")
+	log.Println("wait goroutines finish")
 
-	logrus.Println("do checkpoint")
+	log.Println("do checkpoint")
 	if err = l.DoCheckpoint(); err != nil {
 		return err
 	}
@@ -182,31 +190,31 @@ func (t *MigrationTask) startMigrationTask(c *containerInfo) error {
 		return err
 	}
 
-	logrus.Println("copy checkpoint dir")
+	log.Println("copy checkpoint dir")
 	if err = l.CopyCheckPointToRemote(r); err != nil {
 		return err
 	}
 
-	logrus.Println("copy upperdir")
+	log.Println("copy upperdir")
 	if err = l.CopyUpperToRemote(r); err != nil {
 		return err
 	}
 
 	//在目的主机进行premigration准备操作
-	logrus.Println("start premigration")
+	log.Println("start premigration")
 	if err = r.PreRemoteMigration(t.Id, l.Imagedir.GetUpperId(), t.Args); err != nil {
-		logrus.Printf("premigration error: %v\n", err)
+		log.Printf("premigration error: %v\n", err)
 		return err
 	}
 
 	if err = r.DoRestore(); err != nil {
 		return MigrationWriteErr(err.Error())
 	}
-	logrus.Println("done restore")
+	log.Println("done restore")
 
 	end := time.Now()
-	TimeLogger.Printf("end migration task ai %v\n", end.String())
-	TimeLogger.Printf("migration task cost %v\n", end.Sub(start))
+	log.Printf("end migration task ai %v\n", end.String())
+	log.Printf("migration task cost %v\n", end.Sub(start))
 
 	return nil
 }
@@ -272,10 +280,10 @@ func MigrationWriteErr(w string) error {
 //	e.Stderr="/dev/null"
 //	e.BundlePath=r.Bundle
 //	e.StartResponse = make(chan StartResponse, 1)
-//	logrus.Println("restore send task")
+//	log.Println("restore send task")
 //	s.SendTask(e)
 //	if err := <-e.ErrorCh(); err != nil {
-//		logrus.Println(err)
+//		log.Println(err)
 //		return  err
 //	}
 //		<-e.StartResponse
