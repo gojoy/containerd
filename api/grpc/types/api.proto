@@ -28,6 +28,7 @@ message PreMigrationRequest {
 	string cName=4;
 	string srcIp=5;
 	string upperid=6;
+	repeated string args=7;
 }
 
 message Volumes {
@@ -42,6 +43,7 @@ message PreMigrationResponse {
 message MigrationRequest {
 	string id=1;
 	TargetMachine targetmachine=2;
+	repeated string args=3;
 }
 
 message MigrationResponse {

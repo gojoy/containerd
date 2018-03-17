@@ -505,6 +505,7 @@ func (s *apiServer) Migration(ctx context.Context, r *types.MigrationRequest) (*
 	e := &supervisor.MigrationTask{}
 	e.WithContext(ctx)
 	e.Id = r.Id
+	e.Args = r.Args
 	e.TargetMachine = struct {
 		Host string
 		Port uint32
@@ -524,6 +525,7 @@ func (s *apiServer) PreMigration(ctx context.Context, r *types.PreMigrationReque
 	e.Cname = r.CName
 	e.SrcIp = r.SrcIp
 	e.UpperId = r.Upperid
+	e.Args = r.Args
 	for _, v := range r.Vol {
 		e.Vol = append(e.Vol, struct {
 			Src string

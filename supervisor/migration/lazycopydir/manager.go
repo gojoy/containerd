@@ -2,7 +2,6 @@ package lazycopydir
 
 import "time"
 
-
 //crwdir 挂载的nfs目录 monidiruper读写层目录 lazydir 惰复制目录
 func StartLazyCopy(crwdir, monidir, lazydir string) error {
 

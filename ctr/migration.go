@@ -9,9 +9,10 @@ import (
 )
 
 var migrationCommand = cli.Command{
-	Name:      "migration",
-	Usage:     "migration containers",
-	ArgsUsage: "<container-id> <ip> <port> || mysql 192.168.18.2 9001",
+	Name:  "migration",
+	Usage: "migration containers",
+	ArgsUsage: "-H <ip> -p <port> -A <args> <container-id> ||" +
+		" 192.168.18.2 9001 -A -e MYSQL_ROOT_PASSWORD=123456 mysql",
 	Flags: []cli.Flag{
 		cli.StringFlag{
 			Name:  "host,H",
@@ -20,6 +21,10 @@ var migrationCommand = cli.Command{
 		cli.UintFlag{
 			Name:  "port,p",
 			Usage: "host port",
+		},
+		cli.StringSliceFlag{
+			Name:  "args,A",
+			Usage: "create docker containers args",
 		},
 	},
 	Action: func(context *cli.Context) error {
@@ -30,7 +35,8 @@ var migrationCommand = cli.Command{
 		id := context.Args().First()
 		ip := context.String("host")
 		port := context.Uint("port")
-		fmt.Printf("id:%v, ip %v, port:%v\n", id, ip, port)
+		args := context.StringSlice("args")
+		fmt.Printf("id:%v, ip: %v, port:%v, args: %v\n", id, ip, port, args)
 		c := getClient(context)
 		machine := &types.TargetMachine{
 			Ip:   ip,
@@ -39,12 +45,13 @@ var migrationCommand = cli.Command{
 		_, err := c.Migration(netcontext.Background(), &types.MigrationRequest{
 			Id:            id,
 			Targetmachine: machine,
+			Args:          args,
 		})
 		if err != nil {
 			fmt.Println(err)
 			return err
 		}
-		fmt.Println("after rpc!")
+		fmt.Println("finish rpc!")
 		return nil
 	},
 }
@@ -52,7 +59,7 @@ var migrationCommand = cli.Command{
 func checkArgs(context *cli.Context, expected int) error {
 	var err error
 	cmdName := context.Command.Name
-	fmt.Printf("nums is %v\n", context.NArg())
+	fmt.Printf("nums is %v,args is %v\n", context.NArg(), context.Args())
 	if context.NArg() != expected {
 		err = fmt.Errorf("%s: %q requires exactly %d argument(s)", os.Args[0], cmdName, expected)
 	}

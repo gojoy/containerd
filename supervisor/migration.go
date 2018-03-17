@@ -18,7 +18,8 @@ import (
 type MigrationTask struct {
 	baseTask
 	TargetMachine
-	Id string
+	Id   string
+	Args []string
 }
 
 type TargetMachine struct {
@@ -26,30 +27,13 @@ type TargetMachine struct {
 	Port uint32
 }
 
-//
-//type localMigration struct {
-//	*containerInfo
-//	Rootfs string
-//	Bundle string
-//	CheckpointDir string
-//	IsDump bool
-//
-//}
-//
-//type remoteMigration struct {
-//	Id string
-//	Rootfs string
-//	Bundle string
-//	CheckpointDir string
-//}
-
 var (
 	TimeLogger *log.Logger
 	TimeLogPos = "/run/migration/time.log"
 )
 
 func (s *Supervisor) StartMigration(t *MigrationTask) error {
-
+	logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp:true})
 	f, err := os.OpenFile(TimeLogPos, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 	if err != nil {
 		logrus.Printf("set timelog err:%v\n", err)
@@ -208,10 +192,9 @@ func (t *MigrationTask) startMigrationTask(c *containerInfo) error {
 		return err
 	}
 
-	//r,_:=migration.NewRemoteMigration(t,l)
 	//在目的主机进行premigration准备操作
 	logrus.Println("start premigration")
-	if err = r.PreRemoteMigration(t.Id, l.Imagedir.GetUpperId()); err != nil {
+	if err = r.PreRemoteMigration(t.Id, l.Imagedir.GetUpperId(), t.Args); err != nil {
 		logrus.Printf("premigration error: %v\n", err)
 		return err
 	}

@@ -17,6 +17,7 @@ type PreMigrationTask struct {
 	Vol       []Volumes
 	Cname     string
 	SrcIp     string
+	Args      []string
 }
 
 type Volumes struct {
@@ -44,9 +45,10 @@ func (s *Supervisor) PreMigration(t *PreMigrationTask) error {
 		ImageName: t.ImageName,
 		Vol:       vols,
 		SrcIp:     t.SrcIp,
+		Args:      t.Args,
 	}
 
-	logrus.Printf("start preMigration at %v\n",time.Now())
+	logrus.Printf("start preMigration at %v\n", time.Now())
 	if err = pre.StartPre(); err != nil {
 		logrus.Printf("start pre in supervisor error:%v\n", err)
 		return err

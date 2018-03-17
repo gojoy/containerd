@@ -51,9 +51,9 @@ func (l *LazyReplicator) Replicate() error {
 		targetdir = filepath.Join(l.LazyDir, file)
 
 		if isdir(file) {
-			_,err:=os.Stat(targetdir)
+			_, err := os.Stat(targetdir)
 			if os.IsNotExist(err) {
-				os.MkdirAll(targetdir,0755)
+				os.MkdirAll(targetdir, 0755)
 			}
 		} else {
 			if err = LocalCopy(sourcedir, targetdir); err != nil {
@@ -66,8 +66,8 @@ func (l *LazyReplicator) Replicate() error {
 	return nil
 }
 
-func isdir(v string)bool  {
-	if v[len(v)-1]=='/' {
+func isdir(v string) bool {
+	if v[len(v)-1] == '/' {
 		return true
 	}
 	return false

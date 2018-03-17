@@ -159,7 +159,7 @@ func (r *remoteMigration) SetSpec(l *localMigration) error {
 }
 
 //向目的主机发送grpc请求
-func (r *remoteMigration) PreRemoteMigration(id, upperid string) error {
+func (r *remoteMigration) PreRemoteMigration(id, upperid string, args []string) error {
 
 	//glog.Printf("upperid is %v\n",upperid)
 	var (
@@ -195,6 +195,7 @@ func (r *remoteMigration) PreRemoteMigration(id, upperid string) error {
 		ImageName: imagename,
 		SrcIp:     srcip,
 		CName:     Cname,
+		Args:      args,
 	}
 	pvol := make([]*types.Volumes, 0)
 	for _, v := range vol {

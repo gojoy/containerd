@@ -22,22 +22,29 @@ type PreMigrationInTargetMachine struct {
 	ImageName string
 	Vol       []Volumes
 	SrcIp     string
+	Args      []string
 }
 
 var (
-	lazyreplicator=make([]*lazycopydir.LazyReplicator,0)
+	lazyreplicator = make([]*lazycopydir.LazyReplicator, 0)
 )
 
 func (p *PreMigrationInTargetMachine) StartPre() error {
 	var (
 		err error
 	)
+
+	if len(p.Vol) == 0 {
+		goto CREATCONT
+	}
+
 	glog.Println("premkdir")
 	if err = p.PreMkVolDir(); err != nil {
 		glog.Println(err)
 		return err
 	}
 
+CREATCONT:
 	glog.Println("create docker container")
 	if err = p.CreateDockerContainer(); err != nil {
 		glog.Println(err)
@@ -48,6 +55,9 @@ func (p *PreMigrationInTargetMachine) StartPre() error {
 	if err = p.CopyUpperDir(p.UpperId); err != nil {
 		glog.Println(err)
 		return err
+	}
+	if len(p.Vol) == 0 {
+		goto STARTCONT
 	}
 
 	glog.Println("mount nfs")
@@ -63,18 +73,19 @@ func (p *PreMigrationInTargetMachine) StartPre() error {
 	}
 
 	glog.Println("pre lazycopy")
-	if err=p.StartPreLazyCopy();err!=nil {
+	if err = p.StartPreLazyCopy(); err != nil {
 		glog.Println(err)
 		return err
 	}
 
+STARTCONT:
 	glog.Println("start docker container")
-	if err=p.StartDockerContainer();err!=nil {
+	if err = p.StartDockerContainer(); err != nil {
 		glog.Println(err)
 		return err
 	}
 
-	glog.Printf("now container start run! %v\n",time.Now())
+	glog.Printf("now container start run! %v\n", time.Now())
 
 	glog.Println("start lazycopy")
 	if err = p.StartLazyCopy(); err != nil {
@@ -119,18 +130,22 @@ func (p *PreMigrationInTargetMachine) CreateDockerContainer() error {
 	var (
 		err error
 	)
-	args1:=append([]string{"rm"},p.Cname+"copy")
-	cmd1:=exec.Command("docker",args1...)
+	args1 := append([]string{"rm"}, p.Cname+"copy")
+	cmd1 := exec.Command("docker", args1...)
 	cmd1.Run()
 
-	args := append([]string{"create", "-P", "--security-opt", "seccomp:unconfined",
-		"-e", "MYSQL_ROOT_PASSWORD=123456", "--name"},
-		p.Cname+"copy")
-	//args=append(args,"-v")
+	args := append([]string{"create", "-P", "--security-opt",
+		"seccomp:unconfined", "--name"}, p.Cname+"copy")
+
+	if len(p.Args) != 0 {
+		args = append(args, p.Args...)
+	}
+
 	for i, v := range p.Vol {
 		args = append(args, "-v", fmt.Sprintf("%s:%s",
 			filepath.Join(preVolume, p.Id, strconv.Itoa(i), "merge"), v.dst))
 	}
+
 	args = append(args, p.ImageName)
 	cmd := exec.Command("docker", args...)
 	glog.Printf("create cmd is %v\n", cmd.Args)
@@ -141,14 +156,14 @@ func (p *PreMigrationInTargetMachine) CreateDockerContainer() error {
 	return nil
 }
 
-func (p *PreMigrationInTargetMachine) StartDockerContainer() error  {
-	name:=p.Cname+"copy"
-	args:=[]string{"start","--checkpoint-dir"}
-	args=append(args,filepath.Join(RemoteCheckpointDir,p.Id+"copy"))
-	args=append(args,"--checkpoint",DumpAll,name)
-	cmd:=exec.Command("docker",args...)
-	glog.Printf("start docker cmd is %v\n",cmd.Args)
-	if err:=cmd.Run();err!=nil {
+func (p *PreMigrationInTargetMachine) StartDockerContainer() error {
+	name := p.Cname + "copy"
+	args := []string{"start", "--checkpoint-dir"}
+	args = append(args, filepath.Join(RemoteCheckpointDir, p.Id+"copy"))
+	args = append(args, "--checkpoint", DumpAll, name)
+	cmd := exec.Command("docker", args...)
+	glog.Printf("start docker cmd is %v\n", cmd.Args)
+	if err := cmd.Run(); err != nil {
 		glog.Println(err)
 		return err
 	}
@@ -266,7 +281,6 @@ func (p *PreMigrationInTargetMachine) StartPreLazyCopy() error {
 	var (
 		err                      error
 		crwdir, monidir, lazydir string
-
 	)
 
 	for i := 0; i < len(p.Vol); i++ {
@@ -274,15 +288,15 @@ func (p *PreMigrationInTargetMachine) StartPreLazyCopy() error {
 		crwdir = filepath.Join(RemoteGetVolume(p.Id, i), "nfs")
 		monidir = filepath.Join(RemoteGetVolume(p.Id, i), "upper")
 		lazydir = filepath.Join(RemoteGetVolume(p.Id, i), "lazy")
-		r:=lazycopydir.NewLazyReplicator(crwdir,monidir,lazydir)
-		if err=r.Prelazy();err!=nil {
+		r := lazycopydir.NewLazyReplicator(crwdir, monidir, lazydir)
+		if err = r.Prelazy(); err != nil {
 			glog.Println(err)
 			return err
 		}
-		lazyreplicator=append(lazyreplicator,r)
+		lazyreplicator = append(lazyreplicator, r)
 
 	}
-	glog.Printf("finish pre lazy copy:%v",time.Now())
+	glog.Printf("finish pre lazy copy:%v", time.Now())
 	return nil
 }
 
@@ -290,8 +304,8 @@ func (p *PreMigrationInTargetMachine) StartLazyCopy() error {
 	var (
 		err error
 	)
-	for _,v:=range lazyreplicator {
-		if err=v.Dolazycopy();err!=nil {
+	for _, v := range lazyreplicator {
+		if err = v.Dolazycopy(); err != nil {
 			glog.Println(err)
 			return err
 		}
