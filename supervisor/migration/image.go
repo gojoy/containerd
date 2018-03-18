@@ -6,10 +6,10 @@ import (
 	"github.com/containerd/containerd/specs"
 	"github.com/pkg/sftp"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
-	"log"
 )
 
 const Driver = "overlay2"

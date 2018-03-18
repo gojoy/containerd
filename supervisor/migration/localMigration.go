@@ -116,7 +116,6 @@ func (l *localMigration) CopyCheckPointToRemote(r *remoteMigration) error {
 		return fmt.Errorf("Err: remote nil\n ")
 	}
 
-
 	if err := RemoteMkdirAll(r.CheckpointDir, r.sftpClient); err != nil {
 		log.Println(err)
 		return err

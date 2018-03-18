@@ -2,8 +2,8 @@ package supervisor
 
 import (
 	"github.com/containerd/containerd/supervisor/migration"
-	"time"
 	"log"
+	"time"
 )
 
 const preVolume = "/var/lib/migration/mvolume"

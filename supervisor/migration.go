@@ -7,18 +7,17 @@ import (
 	"github.com/containerd/containerd/runtime"
 	"github.com/containerd/containerd/supervisor/migration"
 	"io"
+	"log"
 	"net"
 	"os"
 	"strings"
 	"time"
-	"log"
 )
 
 const (
-	TimeLogPos = "/run/migration/time.log"
-	TimeLogPath="/run/migration"
+	TimeLogPos  = "/run/migration/time.log"
+	TimeLogPath = "/run/migration"
 )
-
 
 //
 type MigrationTask struct {
@@ -48,7 +47,7 @@ func NewDoubleLoger(f io.Writer) io.Writer {
 
 func init() {
 
-	log.SetFlags(log.Lmicroseconds|log.Lshortfile)
+	log.SetFlags(log.Lmicroseconds | log.Lshortfile)
 	log.SetPrefix("Migration log:")
 	os.MkdirAll(TimeLogPath, 0755)
 	f, err := os.OpenFile(TimeLogPos, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)

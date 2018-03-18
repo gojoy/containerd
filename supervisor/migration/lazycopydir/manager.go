@@ -1,8 +1,8 @@
 package lazycopydir
 
 import (
-	"time"
 	"log"
+	"time"
 )
 
 //crwdir 挂载的nfs目录 monidiruper读写层目录 lazydir 惰复制目录
@@ -40,7 +40,7 @@ func StartLazyCopy(crwdir, monidir, lazydir string) error {
 	return nil
 }
 
-func (replicator *LazyReplicator) Prelazy() error {
+func (replicator *LazyReplicator) StartCrawler() error {
 	var (
 		err error
 	)
@@ -49,11 +49,18 @@ func (replicator *LazyReplicator) Prelazy() error {
 		log.Println(err)
 		return err
 	}
-	log.Printf("crawler %v finish,len is %v\n",replicator.CrawlerDir,len(replicator.List.data))
-	for _,v:=range replicator.List.data {
-		log.Println(v)
+	log.Printf("crawler %v finish,len is %v\n", replicator.CrawlerDir, len(replicator.List.data))
+	for i, v := range replicator.List.data {
+		log.Printf("%v:%v\n",i,v)
 	}
-	log.Println(" ")
+	return nil
+}
+
+func (replicator *LazyReplicator) StartMonitor() error {
+	var (
+		err error
+	)
+	log.Println("now begin monitor! ")
 	go func() {
 		err = replicator.Monitor()
 		if err != nil {
@@ -63,7 +70,9 @@ func (replicator *LazyReplicator) Prelazy() error {
 	}()
 
 	return nil
+
 }
+
 func (replicator *LazyReplicator) Dolazycopy() error {
 
 	var (

@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
-	"log"
 )
 
 type LazyReplicator struct {

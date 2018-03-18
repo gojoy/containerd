@@ -8,10 +8,10 @@ import (
 	"github.com/pkg/sftp"
 	//"github.com/sirupsen/log"
 	netcontext "golang.org/x/net/context"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
-	"log"
 )
 
 //const RemoteOverlay="/var/lib/migration/overlay/diff-id.." 远程主机的镜像层文件目录

@@ -3,9 +3,9 @@ package lazycopydir
 import (
 	"context"
 	"github.com/fsnotify/fsnotify"
+	"log"
 	"os"
 	"path/filepath"
-	"log"
 )
 
 func (l *LazyReplicator) Monitor() error {
@@ -73,7 +73,7 @@ func MonitorDir(dir string, list *JobList, ctx context.Context, crawdir string) 
 							log.Println(err)
 						}
 					}
-					log.Printf("remove %v,now len is %v\n",addpath,len(list.data))
+					log.Printf("remove %v,now len is %v\n", addpath, len(list.data))
 				}
 			}
 

@@ -2,9 +2,9 @@ package lazycopydir
 
 import (
 	"errors"
+	"log"
 	"strings"
 	"sync"
-	"log"
 )
 
 var (
@@ -60,13 +60,14 @@ func (l *JobList) Remove(v string) error {
 
 	if len(l.data) == 1 {
 		if l.data[0] == v {
-			l.data = nil
+			l.data = []string{}
 			return nil
 		} else {
 			return JobListRemoveNotFound
 		}
 	}
 
+	//delete v from slice
 	for i, j := range l.data {
 		if j == v {
 			if i == 0 {
@@ -74,11 +75,13 @@ func (l *JobList) Remove(v string) error {
 			} else if i == len(l.data)-1 {
 				l.data = l.data[:i-1]
 			} else {
-				copy(l.data[i:], l.data[i+1:])
+				//copy(l.data[i:], l.data[i+1:])
+				//l.data=l.data[:len(l.data)-1]
+				l.data[i]=l.data[len(l.data)-1]
+				l.data=l.data[:len(l.data)-1]
 			}
 
 			return nil
-			//l.data=append(l.data[:i],l.data[i+1:]...)
 		}
 	}
 	return JobListRemoveNotFound

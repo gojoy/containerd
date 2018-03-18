@@ -176,7 +176,7 @@ func RemoteCopyDirRsync(local, remote string, ip string) error {
 		remote = remote + "/"
 	}
 
-	args := append([]string{"-azv"}, local, "root@"+ip+":"+remote)
+	args := append([]string{"-azv", "--delete"}, local, "root@"+ip+":"+remote)
 	//log.Printf("l is %v,r is %v,args is %v\n",local,remote,args)
 
 	cmd := exec.Command("rsync", args...)
@@ -332,7 +332,10 @@ func SetNfsExport(vol []Volumes) error {
 		return err
 	}
 	defer f.Close()
-
+	if err=f.Truncate(0);err!=nil {
+		log.Println(err)
+		return err
+	}
 	for _, v := range vol {
 		if _, err = fmt.Fprintf(f, "%s %s\n", v.src, nfsconfig); err != nil {
 			log.Println(err)

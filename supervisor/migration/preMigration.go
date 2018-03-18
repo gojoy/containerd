@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/containerd/containerd/supervisor/migration/lazycopydir"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"time"
-	"log"
 )
 
 const preVolume = "/var/lib/migration/mvolume"
@@ -73,8 +73,14 @@ CREATCONT:
 		return err
 	}
 
-	log.Println("pre lazycopy")
-	if err = p.StartPreLazyCopy(); err != nil {
+	log.Println("pre start crawler")
+	if err = p.StartPreCrawler(); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	log.Println("pre start monitor")
+	if err=p.StartMonitor();err!=nil {
 		log.Println(err)
 		return err
 	}
@@ -100,7 +106,7 @@ func (p *PreMigrationInTargetMachine) PreMkVolDir() error {
 	var (
 		err error
 	)
-	os.RemoveAll(filepath.Join(preVolume,p.Id))
+	os.RemoveAll(filepath.Join(preVolume, p.Id))
 	for i := 0; i < len(p.Vol); i++ {
 		tpath := filepath.Join(preVolume, p.Id, strconv.Itoa(i))
 		if err = os.MkdirAll(filepath.Join(tpath, "lazy"), 0755); err != nil {
@@ -279,7 +285,7 @@ func (p *PreMigrationInTargetMachine) PreLazyDir() error {
 	return nil
 }
 
-func (p *PreMigrationInTargetMachine) StartPreLazyCopy() error {
+func (p *PreMigrationInTargetMachine) StartPreCrawler() error {
 	var (
 		err                      error
 		crwdir, monidir, lazydir string
@@ -291,7 +297,7 @@ func (p *PreMigrationInTargetMachine) StartPreLazyCopy() error {
 		monidir = filepath.Join(RemoteGetVolume(p.Id, i), "upper")
 		lazydir = filepath.Join(RemoteGetVolume(p.Id, i), "lazy")
 		r := lazycopydir.NewLazyReplicator(crwdir, monidir, lazydir)
-		if err = r.Prelazy(); err != nil {
+		if err = r.StartCrawler(); err != nil {
 			log.Println(err)
 			return err
 		}
@@ -299,6 +305,19 @@ func (p *PreMigrationInTargetMachine) StartPreLazyCopy() error {
 
 	}
 	log.Printf("finish pre lazy copy:%v", time.Now())
+	return nil
+}
+
+func (p *PreMigrationInTargetMachine) StartMonitor() error {
+	var (
+		err error
+	)
+	for _,v:=range lazyreplicator {
+		if err=v.StartMonitor();err!=nil {
+			log.Println(err)
+			return err
+		}
+	}
 	return nil
 }
 
