@@ -332,7 +332,7 @@ func SetNfsExport(vol []Volumes) error {
 		return err
 	}
 	defer f.Close()
-	if err=f.Truncate(0);err!=nil {
+	if err = f.Truncate(0); err != nil {
 		log.Println(err)
 		return err
 	}

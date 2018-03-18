@@ -19,7 +19,7 @@ func (l *LazyReplicator) Crawler() error {
 
 	if len(l.List.data) > 0 {
 		log.Println("crawler should start with empty joblist")
-		l.List.data=[]string{}
+		l.List.data = []string{}
 	}
 
 	return CrawlerAllFiles(l.CrawlerDir, l.List)

@@ -73,6 +73,7 @@ func (s *Supervisor) StartMigration(t *MigrationTask) error {
 	}
 
 	log.Println("migration Finish")
+	log.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 	return nil
 }
 

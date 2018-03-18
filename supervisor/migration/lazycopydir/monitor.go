@@ -51,11 +51,13 @@ func MonitorDir(dir string, list *JobList, ctx context.Context, crawdir string) 
 		case events := <-w.Events:
 			//处理新建文件
 			if events.Op&fsnotify.Create == fsnotify.Create {
+				log.Printf("watch create %v\n", events.Name)
 				info, err := os.Stat(events.Name)
 				if err == nil && info.IsDir() {
 					if err = w.Add(events.Name); err != nil {
 						log.Println(err)
 					}
+					log.Printf("now update watch dir add %v\n", events.Name)
 				}
 
 				if addpath, err = filepath.Rel(dir, events.Name); err != nil {
@@ -70,7 +72,7 @@ func MonitorDir(dir string, list *JobList, ctx context.Context, crawdir string) 
 					} else {
 
 						if err = list.Remove(addpath); err != nil {
-							log.Println(err)
+							log.Printf("remove %v,err:%v\n",addpath,err)
 						}
 					}
 					log.Printf("remove %v,now len is %v\n", addpath, len(list.data))

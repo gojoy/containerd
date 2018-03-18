@@ -51,7 +51,7 @@ func (replicator *LazyReplicator) StartCrawler() error {
 	}
 	log.Printf("crawler %v finish,len is %v\n", replicator.CrawlerDir, len(replicator.List.data))
 	for i, v := range replicator.List.data {
-		log.Printf("%v:%v\n",i,v)
+		log.Printf("%v:%v\n", i, v)
 	}
 	return nil
 }

@@ -44,3 +44,33 @@ func TestStartLazyCopy(t *testing.T) {
 
 	fmt.Println("lazycopy finish!")
 }
+
+func TestJobList_RemoveAllDir(t *testing.T) {
+	var (
+		err error
+	)
+	l := NewJobList()
+	dir := "/var/lib/docker/workfile/vols/data"
+	if err := CrawlerAllFiles(dir, l); err != nil {
+		t.Error(err)
+		t.FailNow()
+		return
+	}
+	for _,v:=range l.data {
+		fmt.Println(v)
+	}
+	if err = l.RemoveAllDir("mysql/"); err != nil {
+		t.Error(err)
+		return
+	}
+	for _,v:=range l.data {
+		fmt.Println(v)
+	}
+	return
+
+}
+
+func TestIsWhiteOut(t *testing.T) {
+	file:="/var/lib/docker/workfile/overlaytest/upper/b"
+	fmt.Println(isWhiteOut(file))
+}

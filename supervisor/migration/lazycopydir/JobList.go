@@ -42,6 +42,11 @@ func (l *JobList) Pop() (string, error) {
 	if len(l.data) == 0 {
 		return "", JobListPopError
 	}
+	if len(l.data) == 1 {
+		r := l.data[0]
+		l.data = []string{}
+		return r, nil
+	}
 
 	r := l.data[0]
 	l.data = l.data[1:]
@@ -56,7 +61,7 @@ func (l *JobList) Remove(v string) error {
 		return JobListRemoveEmpty
 	}
 
-	log.Printf("list remove file %v\n", v)
+	//log.Printf("list remove file %v\n", v)
 
 	if len(l.data) == 1 {
 		if l.data[0] == v {
@@ -77,8 +82,9 @@ func (l *JobList) Remove(v string) error {
 			} else {
 				//copy(l.data[i:], l.data[i+1:])
 				//l.data=l.data[:len(l.data)-1]
-				l.data[i]=l.data[len(l.data)-1]
-				l.data=l.data[:len(l.data)-1]
+				//just remove the last one to i,and delete the last one
+				l.data[i] = l.data[len(l.data)-1]
+				l.data = l.data[:len(l.data)-1]
 			}
 
 			return nil
@@ -92,15 +98,17 @@ func (l *JobList) RemoveAllDir(v string) error {
 	l.w.Lock()
 	defer l.w.Unlock()
 
+	length := len(l.data)
+
 	if v[len(v)-1] != '/' {
 		log.Printf("remove dir error: %v is not a dir\n", v)
 	}
 	log.Printf("list remove dir %v \n", v)
-	if len(l.data) == 0 {
+	if length == 0 {
 		return JobListRemoveEmpty
 	}
 
-	if len(l.data) == 1 {
+	if length == 1 {
 		if l.data[0] == v {
 			l.data = nil
 			return nil
@@ -109,18 +117,23 @@ func (l *JobList) RemoveAllDir(v string) error {
 		}
 	}
 
-	for i, j := range l.data {
-		if strings.Contains(j, v) {
+	for i:=0;i<len(l.data);i++ {
 
+		if strings.Contains(l.data[i], v) {
+			//log.Printf("now i is %v,j is %v,length is %v\n",i,l.data[i],length)
 			if i == 0 {
 				l.data = l.data[1:]
 			} else if i == len(l.data)-1 {
 				l.data = l.data[:i-1]
 			} else {
-				copy(l.data[i:], l.data[i+1:])
+				//copy(l.data[i:], l.data[i+1:])
+				//log.Printf("i is %v,len is %v\n", i, length)
+				l.data[i] = l.data[length-1]
+				l.data = l.data[:length-1]
 			}
+			i--
 		}
-
+		length = len(l.data)
 	}
 	return nil
 }

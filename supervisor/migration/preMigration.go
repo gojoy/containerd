@@ -80,7 +80,7 @@ CREATCONT:
 	}
 
 	log.Println("pre start monitor")
-	if err=p.StartMonitor();err!=nil {
+	if err = p.StartMonitor(); err != nil {
 		log.Println(err)
 		return err
 	}
@@ -312,8 +312,8 @@ func (p *PreMigrationInTargetMachine) StartMonitor() error {
 	var (
 		err error
 	)
-	for _,v:=range lazyreplicator {
-		if err=v.StartMonitor();err!=nil {
+	for _, v := range lazyreplicator {
+		if err = v.StartMonitor(); err != nil {
 			log.Println(err)
 			return err
 		}
