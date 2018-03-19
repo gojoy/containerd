@@ -12,6 +12,7 @@ func (l *LazyReplicator) Monitor() error {
 	return MonitorDir(l.MonitorDir, l.List, l.ctx, l.CrawlerDir)
 }
 
+//dir:monitor(upperdir)
 func MonitorDir(dir string, list *JobList, ctx context.Context, crawdir string) error {
 	var (
 		err     error
@@ -62,20 +63,25 @@ func MonitorDir(dir string, list *JobList, ctx context.Context, crawdir string) 
 
 				if addpath, err = filepath.Rel(dir, events.Name); err != nil {
 					log.Printf("Rel err:%v\n", err)
-
 				} else {
-					if isDir(addpath, crawdir) {
 
-						deletedir := addpath + "/"
-						list.RemoveAllDir(deletedir)
-
-					} else {
-
-						if err = list.Remove(addpath); err != nil {
-							log.Printf("remove %v,err:%v\n",addpath,err)
-						}
+					if err=HandleCreateEvents(events.Name,addpath,dir,crawdir,list);err!=nil {
+						log.Println(err)
 					}
-					log.Printf("remove %v,now len is %v\n", addpath, len(list.data))
+
+					//if isDirInPath(addpath, crawdir) {
+					//
+					//	deletedir := addpath + "/"
+					//	list.RemoveAllDir(deletedir)
+					//
+					//} else {
+					//
+					//	if err = list.Remove(addpath); err != nil {
+					//		log.Printf("remove %v,err:%v\n", addpath, err)
+					//	}
+					//}
+					//log.Printf("remove %v,now len is %v\n", addpath, len(list.data))
+
 				}
 			}
 
@@ -96,7 +102,7 @@ func MonitorDir(dir string, list *JobList, ctx context.Context, crawdir string) 
 				log.Println(err)
 			}
 		case <-ctx.Done():
-			log.Println("Exist Monitor")
+			log.Println("receive done,Exist Monitor")
 			goto End
 		}
 	}
@@ -106,17 +112,4 @@ func MonitorDir(dir string, list *JobList, ctx context.Context, crawdir string) 
 End:
 	log.Println("Monitor End")
 	return w.Close()
-}
-
-//判断upperdir中create事件是否为在lowerdir中已经存在的目录，若是，则证明其目录不需要传输
-func isDir(path, crawdir string) bool {
-	crawpath := filepath.Join(crawdir, path)
-	info, err := os.Stat(crawpath)
-	if err != nil {
-		return false
-	}
-	if info.IsDir() {
-		return true
-	}
-	return false
 }

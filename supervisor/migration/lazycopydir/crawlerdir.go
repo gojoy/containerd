@@ -55,9 +55,9 @@ func CrawlerAllFiles(dir string, list *JobList) error {
 			log.Println(err)
 			return err
 		}
-
+		//log.Printf("path is %v,info is %v\n",path,info.Name())
 		if info.IsDir() {
-			list.Append(info.Name() + "/")
+			list.Append(path + "/")
 		} else {
 			list.Append(path)
 		}

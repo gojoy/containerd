@@ -61,7 +61,7 @@ func (l *JobList) Remove(v string) error {
 		return JobListRemoveEmpty
 	}
 
-	//log.Printf("list remove file %v\n", v)
+	log.Printf("we remove file %v\n", v)
 
 	if len(l.data) == 1 {
 		if l.data[0] == v {
@@ -103,7 +103,7 @@ func (l *JobList) RemoveAllDir(v string) error {
 	if v[len(v)-1] != '/' {
 		log.Printf("remove dir error: %v is not a dir\n", v)
 	}
-	log.Printf("list remove dir %v \n", v)
+	log.Printf("we remove dir %v \n", v)
 	if length == 0 {
 		return JobListRemoveEmpty
 	}
@@ -117,7 +117,7 @@ func (l *JobList) RemoveAllDir(v string) error {
 		}
 	}
 
-	for i:=0;i<len(l.data);i++ {
+	for i := 0; i < len(l.data); i++ {
 
 		if strings.Contains(l.data[i], v) {
 			//log.Printf("now i is %v,j is %v,length is %v\n",i,l.data[i],length)
