@@ -65,7 +65,7 @@ func MonitorDir(dir string, list *JobList, ctx context.Context, crawdir string) 
 					log.Printf("Rel err:%v\n", err)
 				} else {
 
-					if err=HandleCreateEvents(events.Name,addpath,dir,crawdir,list);err!=nil {
+					if err = HandleCreateEvents(events.Name, addpath, dir, crawdir, list); err != nil {
 						log.Println(err)
 					}
 

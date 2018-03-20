@@ -13,12 +13,13 @@ type LazyReplicator struct {
 	MonitorDir string // upperdir
 	CrawlerDir string //nfsdir
 	LazyDir    string //lazydir
+	Mgergedir  string
 	List       *JobList
 	ctx        context.Context
 	cancel     context.CancelFunc
 }
 
-func NewLazyReplicator(crw, mon, lazy string) *LazyReplicator {
+func NewLazyReplicator(crw, mon, lazy, merge string) *LazyReplicator {
 
 	list := NewJobList()
 
@@ -28,6 +29,7 @@ func NewLazyReplicator(crw, mon, lazy string) *LazyReplicator {
 		MonitorDir: mon,
 		CrawlerDir: crw,
 		LazyDir:    lazy,
+		Mgergedir:  merge,
 		List:       list,
 		ctx:        ctx,
 		cancel:     cancel,

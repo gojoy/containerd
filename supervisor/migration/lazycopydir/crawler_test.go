@@ -3,13 +3,11 @@ package lazycopydir
 import (
 	"testing"
 
-	"fmt"
-	"os"
-	"path/filepath"
-	"io/ioutil"
 	"log"
+	"path/filepath"
 )
 
+/*
 func TestCrawlerAllFiles(t *testing.T) {
 
 	l := NewJobList()
@@ -28,6 +26,8 @@ func TestCrawlerAllFiles(t *testing.T) {
 }
 
 func TestStartLazyCopy(t *testing.T) {
+	t.FailNow()
+	return
 	var (
 		err  error
 		crw  = "/var/lib/docker/workfile/testoverlay/lower"
@@ -87,30 +87,77 @@ func TestIsOpaque(t *testing.T) {
 func TestHandleCreateEvents(t *testing.T) {
 	log.SetFlags(log.Lshortfile)
 	crawdir := "/var/lib/docker/workfile/overlaytest/lower"
-	monidir:="/var/lib/docker/workfile/overlaytest/upper"
-	l:=NewJobList()
-	if err:=CrawlerAllFiles(crawdir,l);err!=nil {
+	monidir := "/var/lib/docker/workfile/overlaytest/upper"
+	l := NewJobList()
+	if err := CrawlerAllFiles(crawdir, l); err != nil {
 		fmt.Println(err)
 	}
 
-	for _,v:=range l.data {
-		fmt.Printf("list is %v\n",v)
+	for _, v := range l.data {
+		fmt.Printf("list is %v\n", v)
 	}
 	println("begin to delete----------------")
-	infos,err:=ioutil.ReadDir(monidir)
-	if err!=nil {
+	infos, err := ioutil.ReadDir(monidir)
+	if err != nil {
 		println(err)
 		t.FailNow()
 	}
-	for _,v:=range infos {
-		fmt.Printf("in test,file is %v~~~~~~~~~~~~~~~~~~\n",v.Name())
-		if err:=HandleCreateEvents(filepath.Join(monidir,v.Name()),v.Name(),monidir,crawdir,l);err!=nil {
+	for _, v := range infos {
+		fmt.Printf("in test,file is %v~~~~~~~~~~~~~~~~~~\n", v.Name())
+		if err := HandleCreateEvents(filepath.Join(monidir, v.Name()), v.Name(), monidir, crawdir, l); err != nil {
 			println(err)
 			t.FailNow()
 		}
 	}
 
-	for _,v:=range l.data {
-		fmt.Printf("list is %v\n",v)
+	for _, v := range l.data {
+		fmt.Printf("list is %v\n", v)
 	}
+}
+
+
+
+func TestLazyReplicator_Merge(t *testing.T) {
+	log.SetFlags(log.Lshortfile|log.Ltime)
+	var (
+		err  error
+		low,upper,merge,lazy string
+		path = "/var/lib/migration/mvolume/" +
+			"d5c02022a630311f4451dc89aec4257192751b944a7846fe8f9f51868ca93b08/0"
+	)
+	log.Println("begin to merge!------------------------")
+	low=filepath.Join(path,"nfs")
+	upper=filepath.Join(path,"upper")
+	merge=filepath.Join(path,"merge")
+	lazy=filepath.Join(path,"lazy")
+	p:=NewLazyReplicator(low,upper,lazy,merge)
+
+	if err=p.Finish();err!=nil {
+		log.Println(err)
+		t.FailNow()
+		return
+	}
+	return
+}
+
+*/
+
+func TestMergeDir(t *testing.T) {
+	log.SetFlags(log.Lshortfile|log.Ltime)
+	var (
+		err  error
+		upper,merge,lazy string
+		path = "/var/lib/migration/mvolume/" +
+			"d5c02022a630311f4451dc89aec4257192751b944a7846fe8f9f51868ca93b08/0"
+	)
+	log.Println("begin to merge!------------------------")
+	//low=filepath.Join(path,"nfs")
+	upper=filepath.Join(path,"upper")
+	merge=filepath.Join(path,"merge")
+	lazy=filepath.Join(path,"lazy")
+	if err=MergeDir(upper,lazy,merge);err!=nil {
+		log.Println(err)
+		t.FailNow()
+	}
+	return
 }

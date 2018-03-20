@@ -373,3 +373,26 @@ func GetIp() (string, error) {
 	}
 	return "", errors.New("Cannot Get Ip\n")
 }
+
+func SetAllPermission(dir string) error {
+	var (
+		err error
+	)
+
+	if err=filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err!=nil {
+			log.Println(err)
+			if !info.IsDir() {
+				if err=os.Chmod(path,777);err!=nil {
+					log.Println(err)
+					return err
+				}
+			}
+			return err
+		}
+	});err!=nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}

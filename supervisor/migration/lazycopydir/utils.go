@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 )
 
@@ -101,18 +102,17 @@ func HandleCreateEvents(fullpath, path, monitordir, crawlerdir string, list *Job
 					return err
 				}
 
-
 				for _, v := range infos {
-					log.Printf("in utils v is %v--------------------\n",v.Name())
+					log.Printf("in utils v is %v--------------------\n", v.Name())
 
-					base,err:=filepath.Rel(monitordir,fullpath)
-					if err!=nil {
+					base, err := filepath.Rel(monitordir, fullpath)
+					if err != nil {
 						log.Println(err)
 						continue
 					}
-					npath:=filepath.Join(base,v.Name())
-					fpath:=filepath.Join(fullpath,v.Name())
-					if err=HandleCreateEvents(fpath, npath, monitordir, crawlerdir, list);err!=nil {
+					npath := filepath.Join(base, v.Name())
+					fpath := filepath.Join(fullpath, v.Name())
+					if err = HandleCreateEvents(fpath, npath, monitordir, crawlerdir, list); err != nil {
 						log.Println(err)
 					}
 				}
@@ -125,6 +125,78 @@ func HandleCreateEvents(fullpath, path, monitordir, crawlerdir string, list *Job
 			}
 
 		}
+	}
+	return nil
+}
+
+//merge upper and lazy,we must umount mergedir before do it
+func MergeDir(upper, lazy, mergedir string) error {
+
+	var (
+		err error
+	)
+
+	if err = filepath.Walk(upper, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		if !info.IsDir() {
+			if isWhiteOut(path) {
+				if err = os.Remove(path); err != nil {
+					log.Println(err)
+				}
+			}
+		}
+		return nil
+	}); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	if lazy[len(lazy)-1]!='/' {
+		lazy=lazy+"/"
+	}
+
+	if upper[len(upper)-1]!='/' {
+		upper=upper+"/."
+	} else {
+		upper=upper+"."
+	}
+
+	//args := []string{"-lR", "--remove-destination"}
+	args := []string{"-av"}
+	args = append(args, upper, lazy)
+	cmd := exec.Command("rsync", args...)
+	log.Printf("cmd is %v\n",cmd.Args)
+
+	buf,err:=cmd.CombinedOutput()
+	log.Printf("err is %v,out is %v\n",err,string(buf))
+	if err!=nil {
+		log.Printf("err is %v,out is %v\n",err,string(buf))
+		return err
+	}
+	//if err = cmd.Run(); err != nil {
+	//	log.Println(err)
+	//	return err
+	//}
+	if err = os.RemoveAll(mergedir); err != nil {
+		log.Println(err)
+		return err
+	}
+	if err = os.Rename(lazy, mergedir); err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}
+
+func UmountDir(dir string) error {
+	cmd := exec.Command("umount", dir)
+	log.Printf("cmd is %v\n",cmd.Args)
+	if err := cmd.Run(); err != nil {
+		log.Println(err)
+		return err
 	}
 	return nil
 }

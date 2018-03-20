@@ -12,7 +12,7 @@ func StartLazyCopy(crwdir, monidir, lazydir string) error {
 		err error
 	)
 
-	replicator := NewLazyReplicator(crwdir, monidir, lazydir)
+	replicator := NewLazyReplicator(crwdir, monidir, lazydir, "./")
 
 	if err = replicator.Crawler(); err != nil {
 		log.Println(err)
@@ -90,5 +90,43 @@ func (replicator *LazyReplicator) Dolazycopy() error {
 
 	log.Println("finish lazycopy!")
 
+	return nil
+}
+
+func (r *LazyReplicator) Umount() error {
+	var (
+		err error
+	)
+	if err = UmountDir(r.CrawlerDir); err != nil {
+		log.Println(err)
+		return err
+	}
+	if err = UmountDir(r.Mgergedir); err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}
+
+func (r *LazyReplicator) Merge() error {
+	if err := MergeDir(r.MonitorDir, r.LazyDir, r.Mgergedir); err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}
+
+func (r *LazyReplicator) Finish() error {
+	var (
+		err error
+	)
+	if err = r.Umount(); err != nil {
+		log.Printf("finish lazyrepilcator failed:%v\n", err)
+		return err
+	}
+	if err = r.Merge(); err != nil {
+		log.Printf("finish lazyreplicator failed:%v\n", err)
+		return err
+	}
 	return nil
 }

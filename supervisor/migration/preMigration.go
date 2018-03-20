@@ -106,7 +106,11 @@ func (p *PreMigrationInTargetMachine) PreMkVolDir() error {
 	var (
 		err error
 	)
-	os.RemoveAll(filepath.Join(preVolume, p.Id))
+	log.Println("first we remove all the volume dir")
+	if err=os.RemoveAll(filepath.Join(preVolume, p.Id));err!=nil {
+		log.Println(err)
+		return err
+	}
 	for i := 0; i < len(p.Vol); i++ {
 		tpath := filepath.Join(preVolume, p.Id, strconv.Itoa(i))
 		if err = os.MkdirAll(filepath.Join(tpath, "lazy"), 0755); err != nil {
@@ -223,6 +227,10 @@ func (p *PreMigrationInTargetMachine) CopyUpperDir(imageid string) error {
 		return err
 	}
 
+	if err=SetAllPermission(dst);err!=nil {
+		log.Println(err)
+		return err
+	}
 	return nil
 }
 
@@ -287,16 +295,21 @@ func (p *PreMigrationInTargetMachine) PreLazyDir() error {
 
 func (p *PreMigrationInTargetMachine) StartPreCrawler() error {
 	var (
-		err                      error
-		crwdir, monidir, lazydir string
+		err                                error
+		crwdir, monidir, lazydir, mergedir string
 	)
 
+	if len(lazyreplicator)!=0 {
+		log.Printf("lazyreplicator must be nil when we begin!\n")
+		panic("lazyreplicator must be nil when we begin!\n")
+	}
 	for i := 0; i < len(p.Vol); i++ {
 		log.Printf("start lazy vol %d\n", i)
 		crwdir = filepath.Join(RemoteGetVolume(p.Id, i), "nfs")
 		monidir = filepath.Join(RemoteGetVolume(p.Id, i), "upper")
 		lazydir = filepath.Join(RemoteGetVolume(p.Id, i), "lazy")
-		r := lazycopydir.NewLazyReplicator(crwdir, monidir, lazydir)
+		mergedir = filepath.Join(RemoteGetVolume(p.Id, i), "merge")
+		r := lazycopydir.NewLazyReplicator(crwdir, monidir, lazydir, mergedir)
 		if err = r.StartCrawler(); err != nil {
 			log.Println(err)
 			return err
@@ -331,5 +344,19 @@ func (p *PreMigrationInTargetMachine) StartLazyCopy() error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (p *PreMigrationInTargetMachine) Finish() error {
+	var (
+		err error
+	)
+	for _, v := range lazyreplicator {
+		if err = v.Finish(); err != nil {
+			log.Println(err)
+			return err
+		}
+	}
+	lazyreplicator=[]*lazycopydir.LazyReplicator{}
 	return nil
 }
