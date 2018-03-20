@@ -107,7 +107,7 @@ func (p *PreMigrationInTargetMachine) PreMkVolDir() error {
 		err error
 	)
 	log.Println("first we remove all the volume dir")
-	if err=os.RemoveAll(filepath.Join(preVolume, p.Id));err!=nil {
+	if err = os.RemoveAll(filepath.Join(preVolume, p.Id)); err != nil {
 		log.Println(err)
 		return err
 	}
@@ -227,7 +227,7 @@ func (p *PreMigrationInTargetMachine) CopyUpperDir(imageid string) error {
 		return err
 	}
 
-	if err=SetAllPermission(dst);err!=nil {
+	if err = SetAllPermission(dst); err != nil {
 		log.Println(err)
 		return err
 	}
@@ -299,7 +299,7 @@ func (p *PreMigrationInTargetMachine) StartPreCrawler() error {
 		crwdir, monidir, lazydir, mergedir string
 	)
 
-	if len(lazyreplicator)!=0 {
+	if len(lazyreplicator) != 0 {
 		log.Printf("lazyreplicator must be nil when we begin!\n")
 		panic("lazyreplicator must be nil when we begin!\n")
 	}
@@ -357,6 +357,6 @@ func (p *PreMigrationInTargetMachine) Finish() error {
 			return err
 		}
 	}
-	lazyreplicator=[]*lazycopydir.LazyReplicator{}
+	lazyreplicator = []*lazycopydir.LazyReplicator{}
 	return nil
 }

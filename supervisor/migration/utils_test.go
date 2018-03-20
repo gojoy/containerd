@@ -2,6 +2,7 @@ package migration
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -209,4 +210,15 @@ func TestGetCName(t *testing.T) {
 	}
 	log.Printf("cname is %v\n", c)
 	return
+}
+
+func TestGetVolume1(t *testing.T) {
+	var (
+		err error
+		id  = "m1"
+	)
+	if _, err = GetVolume1(id); err != nil {
+		log.Println(err)
+		t.FailNow()
+	}
 }

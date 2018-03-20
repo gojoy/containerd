@@ -106,6 +106,7 @@ func GetDir(imageID string) ([]string, error) {
 
 //把/var/lib/docker/overlay2/id/{diff(upperdir),lower,link,work}拷贝到目的主机，
 // 不拷贝merge文件夹
+/*
 func (i *Image) CopyUpper(c *sftp.Client) error {
 	//得到id/的文件夹
 	mudir := i.upperRD[:len(i.upperRD)-5]
@@ -127,6 +128,7 @@ func (i *Image) CopyUpper(c *sftp.Client) error {
 	}
 	return nil
 }
+*/
 
 func (i *Image) PreCopyImage(c *sftp.Client, r *remoteMigration) error {
 
@@ -143,6 +145,7 @@ func (i *Image) PreCopyImage(c *sftp.Client, r *remoteMigration) error {
 			if err == os.ErrNotExist {
 				//fmt.Printf("begin copy %v to %v\n",v,remotePath)
 				if err = RemoteCopyDirRsync(v, remotePath, r.ip); err != nil {
+					log.Println(err)
 					return err
 				}
 				//if err = RemoteCopyDir(v, remotePath, c); err != nil {

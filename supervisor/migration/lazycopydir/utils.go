@@ -154,26 +154,26 @@ func MergeDir(upper, lazy, mergedir string) error {
 		return err
 	}
 
-	if lazy[len(lazy)-1]!='/' {
-		lazy=lazy+"/"
+	if lazy[len(lazy)-1] != '/' {
+		lazy = lazy + "/"
 	}
 
-	if upper[len(upper)-1]!='/' {
-		upper=upper+"/."
+	if upper[len(upper)-1] != '/' {
+		upper = upper + "/."
 	} else {
-		upper=upper+"."
+		upper = upper + "."
 	}
 
 	//args := []string{"-lR", "--remove-destination"}
 	args := []string{"-av"}
 	args = append(args, upper, lazy)
 	cmd := exec.Command("rsync", args...)
-	log.Printf("cmd is %v\n",cmd.Args)
+	log.Printf("cmd is %v\n", cmd.Args)
 
-	buf,err:=cmd.CombinedOutput()
-	log.Printf("err is %v,out is %v\n",err,string(buf))
-	if err!=nil {
-		log.Printf("err is %v,out is %v\n",err,string(buf))
+	buf, err := cmd.CombinedOutput()
+	log.Printf("err is %v,out is %v\n", err, string(buf))
+	if err != nil {
+		log.Printf("err is %v,out is %v\n", err, string(buf))
 		return err
 	}
 	//if err = cmd.Run(); err != nil {
@@ -193,7 +193,7 @@ func MergeDir(upper, lazy, mergedir string) error {
 
 func UmountDir(dir string) error {
 	cmd := exec.Command("umount", dir)
-	log.Printf("cmd is %v\n",cmd.Args)
+	log.Printf("cmd is %v\n", cmd.Args)
 	if err := cmd.Run(); err != nil {
 		log.Println(err)
 		return err

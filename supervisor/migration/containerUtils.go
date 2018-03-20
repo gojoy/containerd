@@ -235,7 +235,7 @@ func FlushNfsConfig() error {
 	return cmd.Run()
 }
 
-func GetVolume(id string) ([]Volumes, error) {
+func GetVolume1(id string) ([]Volumes, error) {
 
 	var vl []struct{ HostConfig struct{ Binds []string } }
 	var res []Volumes
@@ -267,6 +267,45 @@ func GetVolume(id string) ([]Volumes, error) {
 			return nil, errors.New("split error\n")
 		}
 		res = append(res, struct{ src, dst string }{src: sp[0], dst: sp[1]})
+	}
+
+	return res, nil
+}
+
+func GetVolume(id string) ([]Volumes, error) {
+	var (
+		err error
+		vl  []struct {
+			Mounts []struct {
+				Source      string
+				Destination string
+			}
+		}
+		res []Volumes
+	)
+	args := append([]string{"inspect"}, id)
+	cmd := exec.Command("docker", args...)
+
+	bs, err := cmd.Output()
+	if err != nil {
+		log.Printf("err:%v,out:%v\n", err, string(bs))
+		return nil, err
+	}
+
+	if err = json.Unmarshal(bs, &vl); err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	log.Printf("mounts is %v\n", vl[0].Mounts)
+
+	if len(vl) != 1 {
+		log.Println("len !=1 ")
+		return nil, errors.New("inspect not one\n")
+	}
+
+	for _, v := range vl[0].Mounts {
+		res = append(res, struct{ src, dst string }{src: v.Source, dst: v.Destination})
 	}
 
 	return res, nil
@@ -378,19 +417,32 @@ func SetAllPermission(dir string) error {
 	var (
 		err error
 	)
+	if err=os.Chdir(dir);err!=nil {
+		log.Println(err)
+		return err
+	}
+	args:=[]string{"-R", "644","*"}
+	//args := append([]string{"-R", "644"}, dir)
+	cmd := exec.Command("chmod", args...)
+	if buf, err := cmd.CombinedOutput(); err != nil {
+		log.Printf("args:%v,err:%v,output:%v\n", cmd.Args, err, string(buf))
+		return err
+	}
+	return nil
 
-	if err=filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if err!=nil {
+	if err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
 			log.Println(err)
-			if !info.IsDir() {
-				if err=os.Chmod(path,777);err!=nil {
-					log.Println(err)
-					return err
-				}
-			}
-			return err
 		}
-	});err!=nil {
+		if !info.IsDir() {
+			if err = os.Chmod(path, 777); err != nil {
+				log.Println(err)
+				return err
+			}
+		}
+		return err
+
+	}); err != nil {
 		log.Println(err)
 		return err
 	}

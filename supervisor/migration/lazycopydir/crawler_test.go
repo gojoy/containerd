@@ -143,19 +143,19 @@ func TestLazyReplicator_Merge(t *testing.T) {
 */
 
 func TestMergeDir(t *testing.T) {
-	log.SetFlags(log.Lshortfile|log.Ltime)
+	log.SetFlags(log.Lshortfile | log.Ltime)
 	var (
-		err  error
-		upper,merge,lazy string
-		path = "/var/lib/migration/mvolume/" +
+		err                error
+		upper, merge, lazy string
+		path               = "/var/lib/migration/mvolume/" +
 			"d5c02022a630311f4451dc89aec4257192751b944a7846fe8f9f51868ca93b08/0"
 	)
 	log.Println("begin to merge!------------------------")
 	//low=filepath.Join(path,"nfs")
-	upper=filepath.Join(path,"upper")
-	merge=filepath.Join(path,"merge")
-	lazy=filepath.Join(path,"lazy")
-	if err=MergeDir(upper,lazy,merge);err!=nil {
+	upper = filepath.Join(path, "upper")
+	merge = filepath.Join(path, "merge")
+	lazy = filepath.Join(path, "lazy")
+	if err = MergeDir(upper, lazy, merge); err != nil {
 		log.Println(err)
 		t.FailNow()
 	}
