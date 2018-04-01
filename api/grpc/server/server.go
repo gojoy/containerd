@@ -528,9 +528,9 @@ func (s *apiServer) PreMigration(ctx context.Context, r *types.PreMigrationReque
 	e.Args = r.Args
 	for _, v := range r.Vol {
 		e.Vol = append(e.Vol, struct {
-			Src string
-			Dst string
-		}{Src: v.Src, Dst: v.Dst})
+			Src, Dst string
+			IsWrite  bool
+		}{Src:v.Src , Dst:v.Dst , IsWrite:v.Iswrite })
 	}
 	s.sv.SendTask(e)
 	if err := <-e.ErrorCh(); err != nil {

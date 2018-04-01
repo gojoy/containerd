@@ -21,8 +21,8 @@ type PreMigrationTask struct {
 }
 
 type Volumes struct {
-	Src string
-	Dst string
+	Src,Dst string
+	IsWrite bool
 }
 
 //在目的主机执行的准备操作
@@ -34,7 +34,7 @@ func (s *Supervisor) PreMigration(t *PreMigrationTask) error {
 	)
 	vols := make([]migration.Volumes, 0)
 	for _, v := range t.Vol {
-		v := migration.NewVolumes(v.Src, v.Dst)
+		v := migration.NewVolumes(v.Src, v.Dst,v.IsWrite)
 		vols = append(vols, v)
 	}
 

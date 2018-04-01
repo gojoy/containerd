@@ -26,12 +26,14 @@ type localMigration struct {
 
 type Volumes struct {
 	src, dst string
+	isWrite bool
 }
 
-func NewVolumes(src, dst string) Volumes {
+func NewVolumes(src, dst string,iswrite bool) Volumes {
 	vol := Volumes{
 		src: src,
 		dst: dst,
+		isWrite:iswrite,
 	}
 	return vol
 }

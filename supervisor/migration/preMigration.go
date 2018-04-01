@@ -154,8 +154,14 @@ func (p *PreMigrationInTargetMachine) CreateDockerContainer() error {
 	}
 
 	for i, v := range p.Vol {
-		args = append(args, "-v", fmt.Sprintf("%s:%s",
-			filepath.Join(preVolume, p.Id, strconv.Itoa(i), "merge"), v.dst))
+		if v.isWrite {
+			args = append(args, "-v", fmt.Sprintf("%s:%s",
+				filepath.Join(preVolume, p.Id, strconv.Itoa(i), "merge"), v.dst))
+		} else {
+			args = append(args, "-v", fmt.Sprintf("%s:%s:ro",
+				filepath.Join(preVolume, p.Id, strconv.Itoa(i), "merge"), v.dst))
+		}
+
 	}
 
 	args = append(args, p.ImageName)
@@ -227,10 +233,10 @@ func (p *PreMigrationInTargetMachine) CopyUpperDir(imageid string) error {
 		return err
 	}
 
-	if err = SetAllPermission(dst); err != nil {
-		log.Println(err)
-		return err
-	}
+	//if err = SetAllPermission(dst); err != nil {
+	//	log.Println(err)
+	//	return err
+	//}
 	return nil
 }
 
@@ -304,6 +310,9 @@ func (p *PreMigrationInTargetMachine) StartPreCrawler() error {
 		panic("lazyreplicator must be nil when we begin!\n")
 	}
 	for i := 0; i < len(p.Vol); i++ {
+		if !p.Vol[i].isWrite {
+			continue
+		}
 		log.Printf("start lazy vol %d\n", i)
 		crwdir = filepath.Join(RemoteGetVolume(p.Id, i), "nfs")
 		monidir = filepath.Join(RemoteGetVolume(p.Id, i), "upper")

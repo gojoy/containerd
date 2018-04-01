@@ -194,7 +194,7 @@ func CopyDirLocal(src, dst string) error {
 		local  = src
 		remote = dst
 	)
-	args := append([]string{"-azv"}, local, remote)
+	args := append([]string{"-az"}, local, remote)
 
 	cmd := exec.Command("rsync", args...)
 	//log.Printf("cmd is %v\n",cmd)
@@ -231,46 +231,52 @@ func RemoteMkdirAll(rpath string, c *sftp.Client) error {
 }
 
 func FlushNfsConfig() error {
+	var (
+		err error
+	)
 	cmd := exec.Command("exportfs", "-r")
-	return cmd.Run()
+	if out,err:=cmd.CombinedOutput();err!=nil {
+		log.Printf("err:%v,out:%v\n",err,string(out))
+	}
+	return err
 }
 
-func GetVolume1(id string) ([]Volumes, error) {
-
-	var vl []struct{ HostConfig struct{ Binds []string } }
-	var res []Volumes
-	//args:=append([]string{"inspect","-f","{{.HostConfig.Binds}}"},id)
-	args := append([]string{"inspect"}, id)
-	cmd := exec.Command("docker", args...)
-
-	bs, err := cmd.Output()
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	if err = json.Unmarshal(bs, &vl); err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	if len(vl) != 1 {
-		log.Println("len !=1 ")
-		return nil, errors.New("inspect not one\n")
-	}
-
-	for _, v := range vl[0].HostConfig.Binds {
-		sp := strings.Split(v, ":")
-		if len(sp) != 2 {
-			log.Println("splite false")
-			log.Println(sp)
-			return nil, errors.New("split error\n")
-		}
-		res = append(res, struct{ src, dst string }{src: sp[0], dst: sp[1]})
-	}
-
-	return res, nil
-}
+//func GetVolume1(id string) ([]Volumes, error) {
+//
+//	var vl []struct{ HostConfig struct{ Binds []string } }
+//	var res []Volumes
+//	//args:=append([]string{"inspect","-f","{{.HostConfig.Binds}}"},id)
+//	args := append([]string{"inspect"}, id)
+//	cmd := exec.Command("docker", args...)
+//
+//	bs, err := cmd.Output()
+//	if err != nil {
+//		log.Println(err)
+//		return nil, err
+//	}
+//
+//	if err = json.Unmarshal(bs, &vl); err != nil {
+//		log.Println(err)
+//		return nil, err
+//	}
+//
+//	if len(vl) != 1 {
+//		log.Println("len !=1 ")
+//		return nil, errors.New("inspect not one\n")
+//	}
+//
+//	for _, v := range vl[0].HostConfig.Binds {
+//		sp := strings.Split(v, ":")
+//		if len(sp) != 2 {
+//			log.Println("splite false")
+//			log.Println(sp)
+//			return nil, errors.New("split error\n")
+//		}
+//		res = append(res, struct{ src, dst string }{src: sp[0], dst: sp[1]})
+//	}
+//
+//	return res, nil
+//}
 
 func GetVolume(id string) ([]Volumes, error) {
 	var (
@@ -279,6 +285,7 @@ func GetVolume(id string) ([]Volumes, error) {
 			Mounts []struct {
 				Source      string
 				Destination string
+				RW bool
 			}
 		}
 		res []Volumes
@@ -305,7 +312,10 @@ func GetVolume(id string) ([]Volumes, error) {
 	}
 
 	for _, v := range vl[0].Mounts {
-		res = append(res, struct{ src, dst string }{src: v.Source, dst: v.Destination})
+		res = append(res, struct {
+			src, dst string
+			isWrite  bool
+		}{src:v.Source , dst:v.Destination , isWrite:v.RW })
 	}
 
 	return res, nil
@@ -376,9 +386,11 @@ func SetNfsExport(vol []Volumes) error {
 		return err
 	}
 	for _, v := range vol {
-		if _, err = fmt.Fprintf(f, "%s %s\n", v.src, nfsconfig); err != nil {
-			log.Println(err)
-			return err
+		if v.isWrite {
+			if _, err = fmt.Fprintf(f, "%s %s\n", v.src, nfsconfig); err != nil {
+				log.Println(err)
+				return err
+			}
 		}
 	}
 
@@ -421,7 +433,7 @@ func SetAllPermission(dir string) error {
 		log.Println(err)
 		return err
 	}
-	args:=[]string{"-R", "644","*"}
+	args:=[]string{"-R", "a+rw","."}
 	//args := append([]string{"-R", "644"}, dir)
 	cmd := exec.Command("chmod", args...)
 	if buf, err := cmd.CombinedOutput(); err != nil {
@@ -435,7 +447,7 @@ func SetAllPermission(dir string) error {
 			log.Println(err)
 		}
 		if !info.IsDir() {
-			if err = os.Chmod(path, 777); err != nil {
+			if err = os.Chmod(path, 644); err != nil {
 				log.Println(err)
 				return err
 			}
@@ -447,4 +459,9 @@ func SetAllPermission(dir string) error {
 		return err
 	}
 	return nil
+}
+
+func GetMotifyFiles(path []Volumes) (map[string]bool,error)  {
+
+	return nil,nil
 }

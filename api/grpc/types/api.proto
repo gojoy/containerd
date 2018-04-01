@@ -34,6 +34,7 @@ message PreMigrationRequest {
 message Volumes {
 	string src=1;
 	string dst=2;
+	bool iswrite=3;
 }
 
 message PreMigrationResponse {
