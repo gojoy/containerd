@@ -8,11 +8,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 )
 
 const MigrationDir = "/run/migration"
 const DumpAll = "fullDump"
-const nfsconfig = " 192.168.18.0/24(rw,async,no_root_squash,nohide)"
+const nfsconfig = " 0.0.0.0/24(rw,async,no_root_squash,nohide)"
 
 type localMigration struct {
 	runtime.Container
@@ -112,6 +113,57 @@ func (l *localMigration) CopyUpperToRemote(r *remoteMigration) error {
 
 }
 
+//copy readonly vol to remove /var/lib/migration/mvolume/id/merge
+func (l *localMigration) CopyReadVolToRemote(r *remoteMigration) error {
+	var (
+		err error
+	)
+	vols,err:=GetVolume(l.ID())
+	if err!=nil {
+		log.Println(err)
+		return err
+	}
+	for I,v:=range vols {
+		if !v.isWrite {
+			remoteVolPath:=filepath.Join(preVolume,l.ID(),strconv.Itoa(I),"merge")
+			if err = RemoteMkdirAll(remoteVolPath, r.sftpClient); err != nil {
+				log.Println(err)
+				return err
+			}
+			if err=RemoteCopyDirRsync(v.src,remoteVolPath,r.ip);err!=nil {
+				log.Println(err)
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (l *localMigration) CopyWriteVolToRemote(r *remoteMigration) error {
+	if r==nil {
+		return fmt.Errorf("Err: remote nil\n ")
+	}
+	vols,err:=GetVolume(l.ID())
+	if err!=nil {
+		log.Println(err)
+		return err
+	}
+	for i,v:=range vols {
+		if v.isWrite {
+			remotePath:=filepath.Join(remoteWriteVolume,l.ID(),strconv.Itoa(i),"writevol")
+			if err = RemoteMkdirAll(remotePath, r.sftpClient); err != nil {
+				log.Println(err)
+				return err
+			}
+			if err=RemoteCopyDirRsync(v.src,remotePath,r.ip);err!=nil {
+				log.Println(err)
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 //把本地的checkpoint文件夹拷贝到远程主机
 func (l *localMigration) CopyCheckPointToRemote(r *remoteMigration) error {
 	if r == nil {
@@ -131,6 +183,20 @@ func (l *localMigration) CopyCheckPointToRemote(r *remoteMigration) error {
 	//	log.Println(err)
 	//	return err
 	//}
+	return nil
+}
+
+func (l *localMigration) SaveOpenFile() error {
+	vol,err:=GetVolume(l.ID())
+	if err!=nil {
+		log.Println(err)
+		return err
+	}
+	err=SaveOpenFile(filepath.Join(l.CheckpointDir,l.CheckpointName),l.ID(),vol)
+	if err!=nil {
+		log.Println(err)
+		return err
+	}
 	return nil
 }
 

@@ -1,5 +1,6 @@
 package migration
 
+
 import (
 	"os/exec"
 	"bufio"
@@ -7,7 +8,13 @@ import (
 	"strings"
 	"os"
 	"log"
+	"path/filepath"
+	"encoding/json"
 )
+
+const openFileDir="/run/migration/openfile"
+
+
 //首先把数据卷拷贝到对应的远程upper目录，然后根据crit x fds文件列表，同步这些文件
 //在本地监控数据卷，生成map 所有变更都存在其中，然后把上次同步过的文件从map中删除，
 // 之后在目的主机的upper目录，文件只有在map中，表示以及不是最新版本，就删除
@@ -38,7 +45,58 @@ func fdsSync(checkpointDir string,remoteVolumesDirs []string,vols []Volumes,ip s
 	return nil
 }
 
+//将打开的文件保存到/run/migration/openfile目录下
+func SaveOpenFile(checkdir, id string,vol []Volumes) error {
 
+	files,err:=getFiles(checkdir)
+	if err!=nil {
+		log.Println(err)
+		return err
+	}
+	data,err:=syncNeedFiles(files,vol)
+	if err!=nil {
+		log.Println(err)
+		return err
+	}
+
+	err=dumpFiles(data,id)
+	if err!=nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}
+
+func dumpFiles(data []volpath,id string) error {
+	if len(data)==0 {
+		log.Println("open file is nil")
+		return nil
+	}
+	openjsondir:=filepath.Join(openFileDir,id)
+	openjson:=filepath.Join(openjsondir,"open.json")
+	err:=os.MkdirAll(openjsondir,0665)
+	if err!=nil {
+		log.Println(err)
+		return err
+	}
+	f,err:=os.Create(openjson)
+	if err!=nil {
+		log.Println(err)
+		return err
+	}
+	defer f.Close()
+	enc:=json.NewEncoder(f)
+	enc.SetIndent("","	")
+	for _,v:=range data {
+		if err=enc.Encode(v);err!=nil {
+			log.Println(err)
+			return err
+		}
+	}
+	return nil
+}
+
+//获得所有打开的文件
 func getFiles(path string) ([]string,error) {
 	var (
 		err error
@@ -49,8 +107,9 @@ func getFiles(path string) ([]string,error) {
 	args=append(args,path,"fds")
 	cmd:=exec.Command("crit",args...)
 	out,err:=cmd.Output()
+	log.Println(cmd.Args)
 	if err!=nil {
-		log.Println(err)
+		log.Println(err,string(out))
 		return res,err
 	}
 	//log.Printf("out is %v\n",string(out))
@@ -72,7 +131,7 @@ func getFiles(path string) ([]string,error) {
 	return res,nil
 }
 
-
+//找到再数据卷中的文件
 func syncNeedFiles(files []string, vol []Volumes) ([]volpath,error) {
 	var (
 		err error

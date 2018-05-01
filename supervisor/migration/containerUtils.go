@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	
 )
 
 //var (
@@ -304,7 +305,7 @@ func GetVolume(id string) ([]Volumes, error) {
 		return nil, err
 	}
 
-	log.Printf("mounts is %v\n", vl[0].Mounts)
+	//log.Printf("mounts is %v\n", vl[0].Mounts)
 
 	if len(vl) != 1 {
 		log.Println("len !=1 ")
@@ -461,7 +462,28 @@ func SetAllPermission(dir string) error {
 	return nil
 }
 
-func GetMotifyFiles(path []Volumes) (map[string]bool,error)  {
+type motifyvols map[string]bool
 
-	return nil,nil
-}
+//监控数据卷在pre迁移阶段发送变化的文件
+//func GetMotifyFiles(path []Volumes,ctx context.Context,res []motifyvols) (error)  {
+//	var (
+//		err error
+//	)
+//	if len(path)==0 {
+//		log.Println("vols 0")
+//		return nil
+//	}
+//	if len(res)!=0 {
+//		log.Println("motifyvols must be nil")
+//		return errors.New("motifyvols must be nil")
+//	}
+//	for i,v:=range path {
+//		w,err:=fsnotify.NewWatcher()
+//		if err!=nil {
+//			log.Println(err)
+//			return err
+//		}
+//
+//	}
+//	return err
+//}

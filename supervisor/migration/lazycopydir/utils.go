@@ -171,9 +171,9 @@ func MergeDir(upper, lazy, mergedir string) error {
 	log.Printf("cmd is %v\n", cmd.Args)
 
 	buf, err := cmd.CombinedOutput()
-	log.Printf("err is %v,out is %v\n", err, string(buf))
+	log.Printf("err is %v,out is :%v\n", err, string(buf))
 	if err != nil {
-		log.Printf("err is %v,out is %v\n", err, string(buf))
+		log.Printf("err is %v,out is :%v\n", err, string(buf))
 		return err
 	}
 	//if err = cmd.Run(); err != nil {
@@ -188,6 +188,7 @@ func MergeDir(upper, lazy, mergedir string) error {
 		log.Println(err)
 		return err
 	}
+	log.Println("finish merge!")
 	return nil
 }
 

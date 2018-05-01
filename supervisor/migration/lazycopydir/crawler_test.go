@@ -148,7 +148,7 @@ func TestMergeDir(t *testing.T) {
 		err                error
 		upper, merge, lazy string
 		path               = "/var/lib/migration/mvolume/" +
-			"d5c02022a630311f4451dc89aec4257192751b944a7846fe8f9f51868ca93b08/0"
+			"d5c02022a630311f4451dc89aec4257192751b944a7846fe8f9f51868ca93b08/1"
 	)
 	log.Println("begin to merge!------------------------")
 	//low=filepath.Join(path,"nfs")

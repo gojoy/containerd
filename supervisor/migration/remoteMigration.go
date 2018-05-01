@@ -18,7 +18,7 @@ import (
 const STDIO = "/dev/null"
 const RunTime = "runc"
 const LoginUser = "root"
-const LoginPasswd = "123456"
+const LoginPasswd = "Gjx2927778"
 const SftpPort = 22
 const RemoteCheckpointDir = "/var/lib/migration/checkpoint"
 const RemoteDir = "/var/lib/migration/containers"
@@ -48,6 +48,7 @@ func NewRemoteMigration(ip, id string, port uint32) (*remoteMigration, error) {
 	log.Println("get sftp client")
 	sc, err := GetSftpClient(LoginUser, LoginPasswd, ip, SftpPort)
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
 

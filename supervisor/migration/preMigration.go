@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+const remoteWriteVolume="/var/lib/migration/wvolume"
 const preVolume = "/var/lib/migration/mvolume"
 const remoteUpperDir = "/var/lib/migration/overlay2"
 
@@ -106,13 +107,21 @@ func (p *PreMigrationInTargetMachine) PreMkVolDir() error {
 	var (
 		err error
 	)
-	log.Println("first we remove all the volume dir")
-	if err = os.RemoveAll(filepath.Join(preVolume, p.Id)); err != nil {
-		log.Println(err)
-		return err
-	}
+	//log.Println("first we remove all the volume dir")
+	//if err = os.RemoveAll(filepath.Join(preVolume, p.Id)); err != nil {
+	//	log.Println(err)
+	//	return err
+	//}
 	for i := 0; i < len(p.Vol); i++ {
+		if !p.Vol[i].isWrite {
+			continue
+		}
 		tpath := filepath.Join(preVolume, p.Id, strconv.Itoa(i))
+		log.Printf("we remove wite dir first:%v\n",tpath)
+		if err=os.RemoveAll(tpath);err!=nil {
+			log.Println(err)
+			return err
+		}
 		if err = os.MkdirAll(filepath.Join(tpath, "lazy"), 0755); err != nil {
 			log.Println(err)
 			return err

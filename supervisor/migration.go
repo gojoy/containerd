@@ -150,17 +150,31 @@ func (t *MigrationTask) startMigrationTask(c *containerInfo) error {
 	log.Println("new local")
 	l, err := migration.NewLocalMigration(c.container)
 	if err != nil {
+		log.Println(err)
 		return MigrationWriteErr(err.Error())
 	}
 
 	log.Println("new remote")
 	r, err := migration.NewRemoteMigration(t.Host, t.Id, t.Port)
 	if err != nil {
+		log.Println(err)
 		return MigrationWriteErr(err.Error())
 	}
 
 	log.Println("start preload image in goroutine")
 	go r.PreLoadImage(e, l.Imagedir)
+
+	log.Println("copy readonly to remote")
+	if err=l.CopyReadVolToRemote(r);err!=nil {
+		log.Println(err)
+		return err
+	}
+
+	log.Println("copy write vol to remote")
+	if err=l.CopyWriteVolToRemote(r);err!=nil {
+		log.Println(err)
+		return err
+	}
 
 	//TODO 将hostpath的目录nfs到远程挂载 准备在本机的工作
 	log.Println("start nfs hostpath")
@@ -187,6 +201,12 @@ func (t *MigrationTask) startMigrationTask(c *containerInfo) error {
 	//TODO 远程overlay mount各个目录 开始惰迁移
 
 	if err = l.DoneCheckpoint(); err != nil {
+		return err
+	}
+
+	log.Println("save openfile json")
+	if err=l.SaveOpenFile();err!=nil {
+		log.Println(err)
 		return err
 	}
 
