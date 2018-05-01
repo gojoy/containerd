@@ -1,12 +1,14 @@
 package migration
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/containerd/containerd/api/grpc/types"
 	"github.com/containerd/containerd/runtime"
 	"github.com/containerd/containerd/specs"
+	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/grpc"
@@ -20,7 +22,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	
 )
 
 //var (
@@ -236,8 +237,8 @@ func FlushNfsConfig() error {
 		err error
 	)
 	cmd := exec.Command("exportfs", "-r")
-	if out,err:=cmd.CombinedOutput();err!=nil {
-		log.Printf("err:%v,out:%v\n",err,string(out))
+	if out, err := cmd.CombinedOutput(); err != nil {
+		log.Printf("err:%v,out:%v\n", err, string(out))
 	}
 	return err
 }
@@ -286,7 +287,7 @@ func GetVolume(id string) ([]Volumes, error) {
 			Mounts []struct {
 				Source      string
 				Destination string
-				RW bool
+				RW          bool
 			}
 		}
 		res []Volumes
@@ -316,7 +317,7 @@ func GetVolume(id string) ([]Volumes, error) {
 		res = append(res, struct {
 			src, dst string
 			isWrite  bool
-		}{src:v.Source , dst:v.Destination , isWrite:v.RW })
+		}{src: v.Source, dst: v.Destination, isWrite: v.RW})
 	}
 
 	return res, nil
@@ -430,11 +431,11 @@ func SetAllPermission(dir string) error {
 	var (
 		err error
 	)
-	if err=os.Chdir(dir);err!=nil {
+	if err = os.Chdir(dir); err != nil {
 		log.Println(err)
 		return err
 	}
-	args:=[]string{"-R", "a+rw","."}
+	args := []string{"-R", "a+rw", "."}
 	//args := append([]string{"-R", "644"}, dir)
 	cmd := exec.Command("chmod", args...)
 	if buf, err := cmd.CombinedOutput(); err != nil {
@@ -465,25 +466,50 @@ func SetAllPermission(dir string) error {
 type motifyvols map[string]bool
 
 //监控数据卷在pre迁移阶段发送变化的文件
-//func GetMotifyFiles(path []Volumes,ctx context.Context,res []motifyvols) (error)  {
-//	var (
-//		err error
-//	)
-//	if len(path)==0 {
-//		log.Println("vols 0")
-//		return nil
-//	}
-//	if len(res)!=0 {
-//		log.Println("motifyvols must be nil")
-//		return errors.New("motifyvols must be nil")
-//	}
-//	for i,v:=range path {
-//		w,err:=fsnotify.NewWatcher()
-//		if err!=nil {
-//			log.Println(err)
-//			return err
-//		}
-//
-//	}
-//	return err
-//}
+func GetMotifyFiles(path string, ctx context.Context, res motifyvols) error {
+	var (
+		err error
+	)
+	if len(res) != 0 {
+		log.Println("motifyvols must be nil")
+		return errors.New("motifyvols must be nil")
+	}
+	w, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	if err = filepath.Walk(path, func(p1 string, info os.FileInfo, err error) error {
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		if info.IsDir() {
+			if err = w.Add(p1); err != nil {
+				log.Println(err)
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	for {
+		select {
+		case events:=<-w.Events:
+			if _,ok:=res[events.Name];!ok {
+				res[events.Name]=true
+			}
+		case <-ctx.Done():
+
+			goto END
+		}
+	}
+	END:
+		log.Printf("end monitor %v\n",path)
+	return nil
+}
+

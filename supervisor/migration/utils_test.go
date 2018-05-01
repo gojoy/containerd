@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 var (
@@ -20,14 +21,28 @@ var (
 		SrcIp:     "192.168.18.129",
 		Vol: []Volumes{
 			struct {
-				src string
-				dst string
-			}{src: "/opt/workdir/tmpfile/mysqlvol/data", dst: "/var/lib/mysql"},
+				src     string
+				dst     string
+				isWrite bool
+			}{src: "/var/lib/docker/workfile/vols/data", dst: "/var/lib/mysql", isWrite: true},
 			struct {
-				src string
-				dst string
-			}{src: "/opt/workdir/tmpfile/custome", dst: "/etc/mysql/conf.d"},
+				src     string
+				dst     string
+				isWrite bool
+			}{src: "/opt/workdir/tmpfile/custome", dst: "/etc/mysql/conf.d", isWrite: false},
 		},
+	}
+	m1vol = []Volumes{
+		struct {
+			src     string
+			dst     string
+			isWrite bool
+		}{src: "/var/lib/docker/workfile/vols/data", dst: "/var/lib/mysql", isWrite: true},
+		struct {
+			src     string
+			dst     string
+			isWrite bool
+		}{src: "/opt/workdir/tmpfile/custome", dst: "/etc/mysql/conf.d", isWrite: false},
 	}
 )
 
@@ -168,13 +183,15 @@ func TestCopyUpperDir(t *testing.T) {
 		ImageName: "mysql:5.6",
 		Vol: []Volumes{
 			struct {
-				src string
-				dst string
-			}{src: "/opt/workdir/tmpfile/mysqlvol/data", dst: "/var/lib/mysql"},
+				src     string
+				dst     string
+				isWrite bool
+			}{src: "/opt/workdir/tmpfile/mysqlvol/data", dst: "/var/lib/mysql", isWrite: true},
 			struct {
-				src string
-				dst string
-			}{src: "/opt/workdir/tmpfile/custome", dst: "/etc/mysql/conf.d"},
+				src     string
+				dst     string
+				isWrite bool
+			}{src: "/opt/workdir/tmpfile/custome", dst: "/etc/mysql/conf.d", isWrite: false},
 		},
 	}
 	//err:=p.CreateDockerContainer()
@@ -212,13 +229,22 @@ func TestGetCName(t *testing.T) {
 	return
 }
 
-func TestGetVolume1(t *testing.T) {
-	var (
-		err error
-		id  = "m1"
-	)
-	if _, err = GetVolume1(id); err != nil {
+func TestVolwatcher_StartWatch(t *testing.T) {
+	log.SetFlags(log.Lshortfile)
+	w:=Newvolwatcher(m1vol)
+	log.Printf("init res len is %v\n",len(w.GetRes()))
+	err:=w.StartWatch()
+	if err!=nil {
 		log.Println(err)
 		t.FailNow()
+		return
 	}
+	time.Sleep(10*time.Second)
+	w.StopWatch()
+	time.Sleep(1*time.Second)
+	res:=w.GetRes()
+	for k,_:=range res {
+		log.Println(k)
+	}
+	return
 }

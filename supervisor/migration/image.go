@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"context"
 )
 
 const Driver = "overlay2"
@@ -26,6 +27,15 @@ type Image struct {
 	upperRD string
 	upperid string
 }
+
+type volwatcher struct {
+	vol []Volumes
+	res motifyvols
+	ctx context.Context
+	cancel context.CancelFunc
+}
+
+
 
 // 解析overlay2镜像的lower层（只读）和upper层（读写）
 func NewImage(c runtime.Container) (*Image, error) {
@@ -163,4 +173,44 @@ func (i *Image) PreCopyImage(c *sftp.Client, r *remoteMigration) error {
 
 func (i *Image) GetUpperId() string {
 	return i.upperid
+}
+
+func Newvolwatcher(vol []Volumes) *volwatcher  {
+	r:=make(motifyvols,0)
+	ctx,cancel:=context.WithCancel(context.Background())
+	vwatcher:=&volwatcher{
+		vol:vol,
+		res:r,
+		ctx:ctx,
+		cancel:cancel,
+	}
+	return vwatcher
+}
+
+func (vw *volwatcher) StartWatch() error {
+	v1:=make([]Volumes,0)
+	for _,v:=range vw.vol {
+		if v.isWrite {
+			v1=append(v1,v)
+		}
+	}
+	if len(v1)!=1 {
+		log.Println("write vol is not one")
+		return errors.New("write vol is not one")
+	}
+	go func() {
+		err:=GetMotifyFiles(v1[0].src,vw.ctx,vw.res)
+		if err!=nil {
+			panic(err)
+		}
+	}()
+	return nil
+}
+
+func (vw *volwatcher) StopWatch()  {
+	vw.cancel()
+}
+
+func (vw *volwatcher) GetRes() (motifyvols)  {
+	return vw.res
 }

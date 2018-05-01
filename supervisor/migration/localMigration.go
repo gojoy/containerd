@@ -39,6 +39,7 @@ func NewVolumes(src, dst string,iswrite bool) Volumes {
 	return vol
 }
 
+
 func NewLocalMigration(c runtime.Container) (*localMigration, error) {
 	i, err := NewImage(c)
 	if err != nil {
