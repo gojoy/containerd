@@ -239,12 +239,24 @@ func TestVolwatcher_StartWatch(t *testing.T) {
 		t.FailNow()
 		return
 	}
+	log.Println("start watch")
 	time.Sleep(10*time.Second)
 	w.StopWatch()
 	time.Sleep(1*time.Second)
 	res:=w.GetRes()
-	for k,_:=range res {
-		log.Println(k)
+	for k,v:=range res {
+		log.Printf("%v,%v\n",k,v)
 	}
+
+	s,err:=w.GetStablefile()
+	if err!=nil {
+		log.Println(err)
+		return
+	}
+	for _,v:=range s {
+		log.Println(v)
+	}
+	log.Printf("len f is %v,s is %v,mp is %v\n",len(w.files),len(s),len(res))
+	//log.Println(s)
 	return
 }

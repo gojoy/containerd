@@ -170,6 +170,13 @@ func (t *MigrationTask) startMigrationTask(c *containerInfo) error {
 		return err
 	}
 
+	log.Println("start watch write vol")
+	vwather,err:=l.Watchwritevol()
+	if err!=nil {
+		log.Println(err)
+		return err
+	}
+
 	log.Println("copy write vol to remote")
 	if err=l.CopyWriteVolToRemote(r);err!=nil {
 		log.Println(err)
@@ -204,8 +211,20 @@ func (t *MigrationTask) startMigrationTask(c *containerInfo) error {
 		return err
 	}
 
+	log.Println("get stable filelist")
+	if err=l.Getstablefiles(vwather);err!=nil {
+		log.Println(err)
+		return err
+	}
+
 	log.Println("save openfile json")
 	if err=l.SaveOpenFile();err!=nil {
+		log.Println(err)
+		return err
+	}
+
+	log.Println("fdssync files!")
+	if err=l.SyncWriteFd(r);err!=nil {
 		log.Println(err)
 		return err
 	}

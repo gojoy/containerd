@@ -463,7 +463,7 @@ func SetAllPermission(dir string) error {
 	return nil
 }
 
-type motifyvols map[string]bool
+type motifyvols map[string]string
 
 //监控数据卷在pre迁移阶段发送变化的文件
 func GetMotifyFiles(path string, ctx context.Context, res motifyvols) error {
@@ -501,7 +501,7 @@ func GetMotifyFiles(path string, ctx context.Context, res motifyvols) error {
 		select {
 		case events:=<-w.Events:
 			if _,ok:=res[events.Name];!ok {
-				res[events.Name]=true
+				res[events.Name]=events.Op.String()
 			}
 		case <-ctx.Done():
 

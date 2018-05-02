@@ -33,6 +33,7 @@ type volwatcher struct {
 	res motifyvols
 	ctx context.Context
 	cancel context.CancelFunc
+	files []string
 }
 
 
@@ -189,6 +190,7 @@ func Newvolwatcher(vol []Volumes) *volwatcher  {
 
 func (vw *volwatcher) StartWatch() error {
 	v1:=make([]Volumes,0)
+	f:=make([]string,0)
 	for _,v:=range vw.vol {
 		if v.isWrite {
 			v1=append(v1,v)
@@ -198,6 +200,22 @@ func (vw *volwatcher) StartWatch() error {
 		log.Println("write vol is not one")
 		return errors.New("write vol is not one")
 	}
+
+	err:=filepath.Walk(v1[0].src, func(path string, info os.FileInfo, err error) error {
+		if err!=nil {
+			log.Println(err)
+			return err
+		}
+		f=append(f, path)
+		return nil
+	})
+	if err!=nil {
+		log.Println(err)
+		return err
+	}
+	f=f[1:]
+	vw.files=f
+
 	go func() {
 		err:=GetMotifyFiles(v1[0].src,vw.ctx,vw.res)
 		if err!=nil {
@@ -213,4 +231,24 @@ func (vw *volwatcher) StopWatch()  {
 
 func (vw *volwatcher) GetRes() (motifyvols)  {
 	return vw.res
+}
+
+func (vw *volwatcher) GetStablefile() ([]string,error) {
+	vw.StopWatch()
+	list:=vw.files
+	mp:=vw.GetRes()
+	stable:=make([]string,0)
+	if len(list)==0 {
+		log.Println("nil list")
+		return nil,errors.New("nil list")
+	}
+	for _,v:=range list {
+		if _,ok:=mp[v];!ok {
+			stable=append(stable,v)
+		} else {
+			//log.Printf("%v has change",v)
+		}
+	}
+
+	return stable,nil
 }
