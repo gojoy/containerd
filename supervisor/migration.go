@@ -154,6 +154,15 @@ func (t *MigrationTask) startMigrationTask(c *containerInfo) error {
 		return MigrationWriteErr(err.Error())
 	}
 
+	log.Println("test getmem!")
+	mem,err:=l.GetContainerMem()
+	if err!=nil {
+		log.Println(err)
+		return err
+	}
+	log.Printf("mem is %v\n",mem)
+	//panic("test finish!")
+
 	log.Println("new remote")
 	r, err := migration.NewRemoteMigration(t.Host, t.Id, t.Port)
 	if err != nil {

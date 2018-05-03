@@ -18,7 +18,7 @@ import (
 const STDIO = "/dev/null"
 const RunTime = "runc"
 const LoginUser = "root"
-const LoginPasswd = "Gjx2927778"
+const LoginPasswd = "123456"
 const SftpPort = 22
 const RemoteCheckpointDir = "/var/lib/migration/checkpoint"
 const RemoteDir = "/var/lib/migration/containers"

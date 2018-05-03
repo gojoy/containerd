@@ -139,7 +139,8 @@ func syncNeedFiles(files []string, vol Volumes) []string {
 			//log.Printf("path is %v,right is %v\n",files[i],right)
 			//l:=filepath.Join(v.src,right)
 			//log.Printf("copy file is %v\n",l)
-			res = append(res, right)
+			log.Printf("right is %v\n",right)
+			res = append(res, right[1:])
 		}
 	}
 

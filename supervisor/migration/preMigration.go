@@ -190,11 +190,10 @@ func (p *PreMigrationInTargetMachine) StartDockerContainer() error {
 	args = append(args, "--checkpoint", DumpAll, name)
 	cmd := exec.Command("docker", args...)
 	log.Printf("start docker cmd is %v\n", cmd.Args)
-	if err := cmd.Run(); err != nil {
-		log.Println(err)
+	if bs,err:=cmd.CombinedOutput();err!=nil {
+		log.Printf("err:%v,message:%v\n",err,string(bs))
 		return err
 	}
-
 	return nil
 }
 
@@ -252,10 +251,12 @@ func (p *PreMigrationInTargetMachine) CopyUpperDir(imageid string) error {
 //将目标卷挂载到/var/lib/migration/mvolume/id/volid/nfs
 func (p *PreMigrationInTargetMachine) MountNfs() error {
 	var (
-		err error
 		vol = p.Vol
 	)
 	for i, v := range vol {
+		if !v.isWrite {
+			continue
+		}
 		args := append([]string{"-t", "nfs", "-o", "v3"},
 			fmt.Sprintf("%s:%s", p.SrcIp, v.src))
 
@@ -263,8 +264,8 @@ func (p *PreMigrationInTargetMachine) MountNfs() error {
 
 		cmd := exec.Command("mount", args...)
 		log.Printf("mount cmd is %v\n", cmd.Args)
-		if err = cmd.Run(); err != nil {
-			log.Println(err)
+		if bs,err:=cmd.CombinedOutput();err!=nil {
+			log.Printf("err:%v,message:%v\n",err,string(bs))
 			return err
 		}
 	}
@@ -282,6 +283,9 @@ func (p *PreMigrationInTargetMachine) PreLazyDir() error {
 		err error
 	)
 	for i := 0; i < len(p.Vol); i++ {
+		if !p.Vol[i].isWrite {
+			continue
+		}
 		args := []string{"-t", "overlay", "overlay"}
 		l1 := filepath.Join(RemoteGetVolume(p.Id, i), "nfs")
 		//l2 := filepath.Join(RemoteGetVolume(p.Id, i), "lazy")

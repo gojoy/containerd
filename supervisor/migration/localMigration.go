@@ -12,7 +12,8 @@ import (
 
 const MigrationDir = "/run/migration"
 const DumpAll = "fullDump"
-const nfsconfig = " 0.0.0.0/24(rw,async,no_root_squash,nohide)"
+//const nfsconfig = " 0.0.0.0/24(rw,async,no_root_squash,nohide)"
+const nfsconfig=" *(rw,async,no_root_squash,nohide)"
 const stablefile="stablefilelist.txt"
 const openFileDir = "openfile.json"
 
@@ -358,4 +359,14 @@ func (l *localMigration) Getstablefiles(v *volwatcher) error {
 		return err
 	}
 	return nil
+}
+
+func (l *localMigration) GetContainerMem() (uint64, error) {
+	s,err:=l.Stats()
+	if err!=nil {
+		log.Println(err)
+		return 0,err
+	}
+	log.Printf("mem is %v\n",s.Memory)
+	return s.Memory.Usage.Usage,nil
 }

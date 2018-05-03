@@ -76,11 +76,13 @@ func GetSftpClient(user, passwd, host string, port uint32) (*sftp.Client, error)
 
 	sshClient, err := ssh.Dial("tcp", addr, addrConfig)
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
 
 	sftpClient, err := sftp.NewClient(sshClient)
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
 
