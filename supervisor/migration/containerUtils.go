@@ -515,3 +515,17 @@ func GetMotifyFiles(path string, ctx context.Context, res motifyvols) error {
 	return nil
 }
 
+func getmap(files []string) map[string]bool  {
+	var (
+		res=make(map[string]bool)
+	)
+	for _,v:=range files {
+		if _,ok:=res[v];!ok {
+			res[v]=true
+		}
+	}
+	if _,ok:=res["ib_logfile0"];ok {
+		delete(res,"ib_logfile0")
+	}
+	return res
+}

@@ -129,12 +129,6 @@ func TestAbs(t *testing.T) {
 	println(absPath)
 }
 
-func TestRemoteCopyDir(t *testing.T) {
-	if err := RemoteCopyDir(testpath, testrpath, nil); err != nil {
-		t.Error(err)
-		return
-	}
-}
 
 func TestRemoteMkdirAll(t *testing.T) {
 	c, err := GetSftpClient(LoginUser, LoginPasswd, "192.168.18.128", 22)

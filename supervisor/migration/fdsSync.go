@@ -24,7 +24,7 @@ type allpath [2]string
 type volpath []allpath
 
 // remoteVolumesDirs:代表每个write数据卷在目的主机的拷贝目录
-func fdsSync(checkpointDir string, remoteVolumesDirs string, vols Volumes, ip string) error {
+func fdsSync(checkpointDir string, remoteVolumesDirs string, vols Volumes, ip string,smap map[string]bool) error {
 	files, err := getFiles(checkpointDir)
 	if err != nil {
 		log.Println(err)
@@ -35,11 +35,25 @@ func fdsSync(checkpointDir string, remoteVolumesDirs string, vols Volumes, ip st
 		log.Println(err)
 		return err
 	}
+	deletefromstablemap(syncfiles,smap)
+
 	if err = fastCopy(syncfiles, ip, remoteVolumesDirs, vols); err != nil {
 		log.Println(err)
 		return err
 	}
 	return nil
+}
+
+func deletefromstablemap(files []string, stmap map[string]bool)  {
+
+	for i:=0;i<len(files);i++ {
+		if stmap[files[i]]==true {
+			log.Printf("delete %v\n",files[i])
+			files[i]=files[len(files)-1]
+			files=files[:len(files)-1]
+		}
+		i--
+	}
 }
 
 //将打开的文件保存到/run/migration/is/openfile.jsob目录下
@@ -139,7 +153,7 @@ func syncNeedFiles(files []string, vol Volumes) []string {
 			//log.Printf("path is %v,right is %v\n",files[i],right)
 			//l:=filepath.Join(v.src,right)
 			//log.Printf("copy file is %v\n",l)
-			log.Printf("right is %v\n",right)
+			//log.Printf("right is %v\n",right)
 			res = append(res, right[1:])
 		}
 	}
@@ -161,6 +175,7 @@ func fastCopy(files []string, ip string, remote string, vol Volumes) error {
 		log.Println(err)
 	}
 	for _, v := range files {
+		log.Printf("fdsync:%v\n",v)
 		if err = RemoteCopyFileRsync(v, remote, ip); err != nil {
 			log.Println(err)
 		}
@@ -184,8 +199,8 @@ func RemoteCopyFileRsync(local, remote string, ip string) error {
 	//log.Printf("l is %v,r is %v,args is %v\n",local,remote,args)
 
 	cmd := exec.Command("rsync", args...)
-	log.Println(cmd.Args)
-	//log.Printf("cmd is %v\n",cmd)
+	//log.Println(cmd.Args)
+
 	if out, err := cmd.CombinedOutput(); err != nil {
 		log.Printf("rsync error:%v,out:%v\n", err, string(out))
 		log.Printf("cmd is %v\n", cmd.Args)

@@ -139,13 +139,15 @@ func (t *MigrationTask) checkTargetMachine() (types.APIClient, error) {
 }
 
 func (t *MigrationTask) startMigrationTask(c *containerInfo) error {
-	start := time.Now()
-	log.Printf("start migration task at %v\n", start.String())
-
 	var (
 		e   = make(chan error)
 		err error
+		st time.Time
 	)
+	start := time.Now()
+	log.Printf("start migration task at %v\n", start.String())
+
+
 
 	log.Println("new local")
 	l, err := migration.NewLocalMigration(c.container)
@@ -192,6 +194,9 @@ func (t *MigrationTask) startMigrationTask(c *containerInfo) error {
 		return err
 	}
 
+	log.Println("start precopy mem")
+	time.Sleep(10*time.Second)
+
 	//TODO 将hostpath的目录nfs到远程挂载 准备在本机的工作
 	log.Println("start nfs hostpath")
 	if err = l.SetNfsExport(); err != nil {
@@ -221,7 +226,8 @@ func (t *MigrationTask) startMigrationTask(c *containerInfo) error {
 	}
 
 	log.Println("get stable filelist")
-	if err=l.Getstablefiles(vwather);err!=nil {
+	stablemap,err:=l.Getstablefiles(vwather)
+	if err!=nil {
 		log.Println(err)
 		return err
 	}
@@ -232,11 +238,21 @@ func (t *MigrationTask) startMigrationTask(c *containerInfo) error {
 		return err
 	}
 
-	log.Println("fdssync files!")
-	if err=l.SyncWriteFd(r);err!=nil {
+	log.Println("fdsync files!")
+	st=time.Now()
+	if err=l.SyncWriteFd(r,stablemap);err!=nil {
 		log.Println(err)
 		return err
 	}
+	log.Printf("fdsync time:%v\n",time.Since(st))
+
+	log.Println("directrsync!")
+	st=time.Now()
+	if err=l.DirectRsync(r);err!=nil {
+		log.Println(err)
+		return err
+	}
+	log.Printf("direct time:%v\n",time.Since(st))
 
 	log.Println("copy checkpoint dir")
 	if err = l.CopyCheckPointToRemote(r); err != nil {
