@@ -530,7 +530,7 @@ func (s *apiServer) PreMigration(ctx context.Context, r *types.PreMigrationReque
 		e.Vol = append(e.Vol, struct {
 			Src, Dst string
 			IsWrite  bool
-		}{Src:v.Src , Dst:v.Dst , IsWrite:v.Iswrite })
+		}{Src:v.Src, Dst:v.Dst, IsWrite:v.Iswrite})
 	}
 	s.sv.SendTask(e)
 	if err := <-e.ErrorCh(); err != nil {

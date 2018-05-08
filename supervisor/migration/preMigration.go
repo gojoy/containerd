@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const remoteWriteVolume="/var/lib/migration/wvolume"
+const remoteWriteVolume = "/var/lib/migration/wvolume"
 const preVolume = "/var/lib/migration/mvolume"
 const remoteUpperDir = "/var/lib/migration/overlay2"
 
@@ -117,8 +117,8 @@ func (p *PreMigrationInTargetMachine) PreMkVolDir() error {
 			continue
 		}
 		tpath := filepath.Join(preVolume, p.Id, strconv.Itoa(i))
-		log.Printf("we remove wite dir first:%v\n",tpath)
-		if err=os.RemoveAll(tpath);err!=nil {
+		log.Printf("we remove wite dir first:%v\n", tpath)
+		if err = os.RemoveAll(tpath); err != nil {
 			log.Println(err)
 			return err
 		}
@@ -190,8 +190,8 @@ func (p *PreMigrationInTargetMachine) StartDockerContainer() error {
 	args = append(args, "--checkpoint", DumpAll, name)
 	cmd := exec.Command("docker", args...)
 	log.Printf("start docker cmd is %v\n", cmd.Args)
-	if bs,err:=cmd.CombinedOutput();err!=nil {
-		log.Printf("err:%v,message:%v\n",err,string(bs))
+	if bs, err := cmd.CombinedOutput(); err != nil {
+		log.Printf("err:%v,message:%v\n", err, string(bs))
 		return err
 	}
 	return nil
@@ -264,8 +264,8 @@ func (p *PreMigrationInTargetMachine) MountNfs() error {
 
 		cmd := exec.Command("mount", args...)
 		log.Printf("mount cmd is %v\n", cmd.Args)
-		if bs,err:=cmd.CombinedOutput();err!=nil {
-			log.Printf("err:%v,message:%v\n",err,string(bs))
+		if bs, err := cmd.CombinedOutput(); err != nil {
+			log.Printf("err:%v,message:%v\n", err, string(bs))
 			return err
 		}
 	}

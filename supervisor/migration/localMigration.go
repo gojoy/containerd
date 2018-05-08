@@ -1,22 +1,23 @@
 package migration
 
 import (
-	"github.com/containerd/containerd/runtime"
-	"os"
-	"path/filepath"
 	"errors"
 	"fmt"
+	"github.com/containerd/containerd/runtime"
 	"log"
+	"os"
+	"path/filepath"
 	"strconv"
 )
 
 const MigrationDir = "/run/migration"
 const DumpAll = "fullDump"
+
 //const nfsconfig = " 0.0.0.0/24(rw,async,no_root_squash,nohide)"
-const nfsconfig=" *(rw,async,no_root_squash,nohide)"
-const stablefile="stablefilelist.txt"
+const nfsconfig = " *(rw,async,no_root_squash,nohide)"
+const stablefile = "stablefilelist.txt"
 const openFileDir = "openfile.json"
-const directrsyncdir="direct"
+const directrsyncdir = "direct"
 
 type localMigration struct {
 	runtime.Container
@@ -26,35 +27,33 @@ type localMigration struct {
 	CheckpointName string
 	IsDump         bool
 	Imagedir       *Image
-	vols []Volumes
-	basedir string
-	writevolid int
+	vols           []Volumes
+	basedir        string
+	writevolid     int
 }
 
 type Volumes struct {
 	src, dst string
-	isWrite bool
+	isWrite  bool
 }
 
 type writevol struct {
 	vol Volumes
-	id int
+	id  int
 }
 
-
-func NewVolumes(src, dst string,iswrite bool) Volumes {
+func NewVolumes(src, dst string, iswrite bool) Volumes {
 	vol := Volumes{
-		src: src,
-		dst: dst,
-		isWrite:iswrite,
+		src:     src,
+		dst:     dst,
+		isWrite: iswrite,
 	}
 	return vol
 }
 
-
 func NewLocalMigration(c runtime.Container) (*localMigration, error) {
 	var (
-		wv=make([]writevol,0)
+		wv = make([]writevol, 0)
 	)
 	i, err := NewImage(c)
 	if err != nil {
@@ -68,31 +67,31 @@ func NewLocalMigration(c runtime.Container) (*localMigration, error) {
 	l.IsDump = false
 	l.Imagedir = i
 	l.CheckpointName = DumpAll
-	l.basedir=filepath.Join(MigrationDir,c.ID())
-	if err:=os.MkdirAll(l.basedir,0666);err!=nil {
+	l.basedir = filepath.Join(MigrationDir, c.ID())
+	if err := os.MkdirAll(l.basedir, 0666); err != nil {
 		log.Println(err)
-		return nil,err
+		return nil, err
 	}
 
-	vols,err:=GetVolume(c.ID())
-	if err!=nil {
+	vols, err := GetVolume(c.ID())
+	if err != nil {
 		log.Println(err)
-		return nil,err
+		return nil, err
 	}
-	l.vols=vols
-	for i,v:=range vols {
+	l.vols = vols
+	for i, v := range vols {
 		if v.isWrite {
-			wv=append(wv, struct {
+			wv = append(wv, struct {
 				vol Volumes
 				id  int
-			}{vol: v, id:i })
+			}{vol: v, id: i})
 		}
 	}
-	if len(wv)!=1 {
+	if len(wv) != 1 {
 		log.Println("container write vol not one")
-		return nil,errors.New("container write vol not one")
+		return nil, errors.New("container write vol not one")
 	}
-	l.writevolid=wv[0].id
+	l.writevolid = wv[0].id
 	if err := os.MkdirAll(l.CheckpointDir, 0666); err != nil {
 		return nil, err
 	}
@@ -158,19 +157,19 @@ func (l *localMigration) CopyReadVolToRemote(r *remoteMigration) error {
 	var (
 		err error
 	)
-	vols,err:=GetVolume(l.ID())
-	if err!=nil {
+	vols, err := GetVolume(l.ID())
+	if err != nil {
 		log.Println(err)
 		return err
 	}
-	for I,v:=range vols {
+	for I, v := range vols {
 		if !v.isWrite {
-			remoteVolPath:=filepath.Join(preVolume,l.ID(),strconv.Itoa(I),"merge")
+			remoteVolPath := filepath.Join(preVolume, l.ID(), strconv.Itoa(I), "merge")
 			if err = RemoteMkdirAll(remoteVolPath, r.sftpClient); err != nil {
 				log.Println(err)
 				return err
 			}
-			if err=RemoteCopyDirRsync(v.src,remoteVolPath,r.ip);err!=nil {
+			if err = RemoteCopyDirRsync(v.src, remoteVolPath, r.ip); err != nil {
 				log.Println(err)
 				return err
 			}
@@ -183,33 +182,36 @@ func (l *localMigration) CopyWriteVolToRemote(r *remoteMigration) error {
 	var (
 		err error
 	)
-	if r==nil {
+	if r == nil {
 		return fmt.Errorf("Err: remote nil\n ")
 	}
-	vols:=l.vols
+	vols := l.vols
 
-	for i,v:=range vols {
+	for i, v := range vols {
 		if v.isWrite {
-			remotePath:=filepath.Join(remoteWriteVolume,l.ID(),strconv.Itoa(i))
-			if err = RemoteMkdirAll(remotePath, r.sftpClient); err != nil {
-				log.Println(err)
-				return err
-			}
-			log.Printf("copy writevol id:%v\n",i)
-			if err=RemoteCopyDirRsync(v.src,remotePath,r.ip);err!=nil {
-				log.Println(err)
-				return err
-			}
 
-			remotepathcopy:=remotePath+directrsyncdir
+			remotePath := filepath.Join(remoteWriteVolume, l.ID(), strconv.Itoa(i))
+			remotepathcopy := remotePath + directrsyncdir
 			if err = RemoteMkdirAll(remotepathcopy, r.sftpClient); err != nil {
 				log.Println(err)
 				return err
 			}
-			if err=RemoteCopyDirRsync(v.src,remotepathcopy,r.ip);err!=nil {
+			if err = RemoteCopyDirRsync(v.src, remotepathcopy, r.ip); err != nil {
 				log.Println(err)
 				return err
 			}
+
+			if err = RemoteMkdirAll(remotePath, r.sftpClient); err != nil {
+				log.Println(err)
+				return err
+			}
+			log.Printf("copy writevol id:%v\n", i)
+			if err = RemoteCopyDirRsync(v.src, remotePath, r.ip); err != nil {
+				log.Println(err)
+				return err
+			}
+
+
 
 			//remotepathback:=remotePath+"back"
 			//if err = RemoteMkdirAll(remotepathback, r.sftpClient); err != nil {
@@ -249,27 +251,27 @@ func (l *localMigration) CopyCheckPointToRemote(r *remoteMigration) error {
 
 func (l *localMigration) SaveOpenFile() error {
 	var (
-		err error
-		writevols=make([]Volumes,0)
+		err       error
+		writevols = make([]Volumes, 0)
 	)
-	vol,err:=GetVolume(l.ID())
-	if err!=nil {
+	vol, err := GetVolume(l.ID())
+	if err != nil {
 		log.Println(err)
 		return err
 	}
-	for _,v:=range vol {
+	for _, v := range vol {
 		if v.isWrite {
-			writevols=append(writevols,v)
+			writevols = append(writevols, v)
 		}
 	}
-	if len(writevols)!=1 {
+	if len(writevols) != 1 {
 		log.Println("write vols nil")
 		return errors.New("write vols nil")
 	}
-	path:=filepath.Join(l.basedir,openFileDir)
-	ckdir:=filepath.Join(l.CheckpointDir,l.CheckpointName)
-	err=SaveOpenFile(ckdir,path,writevols[0])
-	if err!=nil {
+	path := filepath.Join(l.basedir, openFileDir)
+	ckdir := filepath.Join(l.CheckpointDir, l.CheckpointName)
+	err = SaveOpenFile(ckdir, path, writevols[0])
+	if err != nil {
 		log.Println(err)
 		return err
 	}
@@ -336,31 +338,30 @@ func (l *localMigration) SetNfsExport() error {
 	return err
 }
 
-
-func (l *localMigration) SyncWriteFd(r *remoteMigration,smap map[string]bool) error  {
+func (l *localMigration) SyncWriteFd(r *remoteMigration, smap map[string]bool) error {
 	var (
 		err error
-		wv=make([]writevol,0)
+		wv  = make([]writevol, 0)
 	)
-	vols:=l.vols
+	vols := l.vols
 
-	for i,v:=range vols {
+	for i, v := range vols {
 		if v.isWrite {
-			wv=append(wv, struct {
+			wv = append(wv, struct {
 				vol Volumes
 				id  int
-			}{vol: v, id:i })
+			}{vol: v, id: i})
 		}
 	}
-	if len(wv)!=1 {
+	if len(wv) != 1 {
 		log.Println("write vols nil")
 		return errors.New("write vols nil")
 	}
-	rpath:=filepath.Join(remoteWriteVolume,l.ID(),strconv.Itoa(wv[0].id))
-	lc:=filepath.Join(l.CheckpointDir,l.CheckpointName)
-	log.Printf("start fdssync vol:%v",wv[0])
-	err=fdsSync(lc,rpath,wv[0].vol,r.ip,smap)
-	if err!=nil {
+	rpath := filepath.Join(remoteWriteVolume, l.ID(), strconv.Itoa(wv[0].id))
+	lc := filepath.Join(l.CheckpointDir, l.CheckpointName)
+	log.Printf("start fdssync vol:%v", wv[0])
+	err = fdsSync(lc, rpath, wv[0].vol, r.ip, smap)
+	if err != nil {
 		log.Println(err)
 		return err
 	}
@@ -372,61 +373,61 @@ func (l *localMigration) DirectRsync(r *remoteMigration) error {
 	var (
 		err error
 	)
-	srcdir:=l.vols[l.writevolid].src
-	dstdir:=filepath.Join(remoteWriteVolume,l.ID(),strconv.Itoa(l.writevolid))+directrsyncdir
-	err=RemoteCopyDirRsync(srcdir,dstdir,r.ip)
-	if err!=nil {
+	srcdir := l.vols[l.writevolid].src
+	dstdir := filepath.Join(remoteWriteVolume, l.ID(), strconv.Itoa(l.writevolid)) + directrsyncdir
+	err = RemoteCopyDirRsync(srcdir, dstdir, r.ip)
+	if err != nil {
 		log.Println(err)
 		return err
 	}
 	return nil
 }
 
-func (l *localMigration) Watchwritevol() (*volwatcher,error) {
+func (l *localMigration) Watchwritevol() (*volwatcher, error) {
 	var (
-		err error
+		err      error
 		vwatcher *volwatcher
 	)
-	vwatcher=Newvolwatcher(l.vols)
-	err=vwatcher.StartWatch()
-	if err!=nil {
+	vwatcher = Newvolwatcher(l.vols)
+	err = vwatcher.StartWatch()
+	if err != nil {
 		log.Println(err)
-		return nil,err
+		return nil, err
 	}
-	return vwatcher,nil
+	return vwatcher, nil
 }
 
-func (l *localMigration) Getstablefiles(v *volwatcher) (map[string]bool,error) {
-	res,err:=v.GetStablefile()
-	if err!=nil {
+func (l *localMigration) Getstablefiles(v *volwatcher) (map[string]bool, error) {
+	res, err := v.GetStablefile()
+	if err != nil {
 		log.Println(err)
-		return nil,err
+		return nil, err
 	}
 	//log.Printf("stablefileres is: %v\n",res)
 
 	//log.Printf("vols is %v\n",l.vols[l.writevolid])
-	relatepath:=getstablerelatepath(res,l.vols[l.writevolid])
-	log.Printf("relatepath len is %v\n",len(relatepath))
-	if len(relatepath)==0 {
+	relatepath := getstablerelatepath(res, l.vols[l.writevolid])
+	log.Printf("relatepath len is %v\n", len(relatepath))
+	if len(relatepath) == 0 {
 		panic("len is 0")
 	}
 
-	stablemap:=getmap(relatepath)
+	stablemap := getmap(relatepath)
 
-	path:=filepath.Join(l.basedir,stablefile)
-	if err=dumpFiles(relatepath,path);err!=nil {
+	path := filepath.Join(l.basedir, stablefile)
+	if err = dumpFiles(relatepath, path); err != nil {
 		log.Println(err)
-		return nil,err
+		return nil, err
 	}
-	return stablemap,nil
+	return stablemap, nil
 }
 
 func (l *localMigration) GetContainerMem() (uint64, error) {
-	s,err:=l.Stats()
-	if err!=nil {
+	s, err := l.Stats()
+	if err != nil {
 		log.Println(err)
-		return 0,err
+		return 0, err
 	}
 	//log.Printf("mem is %v\n",s.Memory)
-	return s.Memory.Usage.Usage,nil
+	return s.Memory.Usage.Usage, nil
 }

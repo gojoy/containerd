@@ -1,6 +1,7 @@
 package migration
 
 import (
+	"context"
 	"errors"
 	"github.com/containerd/containerd/runtime"
 	"github.com/containerd/containerd/specs"
@@ -10,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"context"
 )
 
 const Driver = "overlay2"
@@ -29,14 +29,12 @@ type Image struct {
 }
 
 type volwatcher struct {
-	vol []Volumes
-	res motifyvols
-	ctx context.Context
+	vol    []Volumes
+	res    motifyvols
+	ctx    context.Context
 	cancel context.CancelFunc
-	files []string
+	files  []string
 }
-
-
 
 // 解析overlay2镜像的lower层（只读）和upper层（读写）
 func NewImage(c runtime.Container) (*Image, error) {
@@ -176,79 +174,79 @@ func (i *Image) GetUpperId() string {
 	return i.upperid
 }
 
-func Newvolwatcher(vol []Volumes) *volwatcher  {
-	r:=make(motifyvols,0)
-	ctx,cancel:=context.WithCancel(context.Background())
-	vwatcher:=&volwatcher{
-		vol:vol,
-		res:r,
-		ctx:ctx,
-		cancel:cancel,
+func Newvolwatcher(vol []Volumes) *volwatcher {
+	r := make(motifyvols, 0)
+	ctx, cancel := context.WithCancel(context.Background())
+	vwatcher := &volwatcher{
+		vol:    vol,
+		res:    r,
+		ctx:    ctx,
+		cancel: cancel,
 	}
 	return vwatcher
 }
 
 func (vw *volwatcher) StartWatch() error {
-	v1:=make([]Volumes,0)
-	f:=make([]string,0)
-	for _,v:=range vw.vol {
+	v1 := make([]Volumes, 0)
+	f := make([]string, 0)
+	for _, v := range vw.vol {
 		if v.isWrite {
-			v1=append(v1,v)
+			v1 = append(v1, v)
 		}
 	}
-	if len(v1)!=1 {
+	if len(v1) != 1 {
 		log.Println("write vol is not one")
 		return errors.New("write vol is not one")
 	}
 
-	err:=filepath.Walk(v1[0].src, func(path string, info os.FileInfo, err error) error {
-		if err!=nil {
+	err := filepath.Walk(v1[0].src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
 			log.Println(err)
 			return err
 		}
-		f=append(f, path)
+		f = append(f, path)
 		return nil
 	})
-	if err!=nil {
+	if err != nil {
 		log.Println(err)
 		return err
 	}
-	f=f[1:]
-	vw.files=f
+	f = f[1:]
+	vw.files = f
 
 	go func() {
-		err:=GetMotifyFiles(v1[0].src,vw.ctx,vw.res)
-		if err!=nil {
+		err := GetMotifyFiles(v1[0].src, vw.ctx, vw.res)
+		if err != nil {
 			panic(err)
 		}
 	}()
 	return nil
 }
 
-func (vw *volwatcher) StopWatch()  {
+func (vw *volwatcher) StopWatch() {
 	vw.cancel()
 }
 
-func (vw *volwatcher) GetRes() (motifyvols)  {
+func (vw *volwatcher) GetRes() motifyvols {
 	return vw.res
 }
 
-func (vw *volwatcher) GetStablefile() ([]string,error) {
+func (vw *volwatcher) GetStablefile() ([]string, error) {
 	vw.StopWatch()
-	list:=vw.files
-	mp:=vw.GetRes()
-	stable:=make([]string,0)
-	if len(list)==0 {
+	list := vw.files
+	mp := vw.GetRes()
+	stable := make([]string, 0)
+	if len(list) == 0 {
 		log.Println("nil list")
-		return nil,errors.New("nil list")
+		return nil, errors.New("nil list")
 	}
-	for _,v:=range list {
-		if _,ok:=mp[v];!ok {
-			stable=append(stable,v)
+	for _, v := range list {
+		if _, ok := mp[v]; !ok {
+			stable = append(stable, v)
 		} else {
 			//log.Printf("%v has change",v)
 		}
 	}
 
-	return stable,nil
+	return stable, nil
 }

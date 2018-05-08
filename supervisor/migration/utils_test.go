@@ -129,7 +129,6 @@ func TestAbs(t *testing.T) {
 	println(absPath)
 }
 
-
 func TestRemoteMkdirAll(t *testing.T) {
 	c, err := GetSftpClient(LoginUser, LoginPasswd, "192.168.18.128", 22)
 	if err != nil {
@@ -225,32 +224,32 @@ func TestGetCName(t *testing.T) {
 
 func TestVolwatcher_StartWatch(t *testing.T) {
 	log.SetFlags(log.Lshortfile)
-	w:=Newvolwatcher(m1vol)
-	log.Printf("init res len is %v\n",len(w.GetRes()))
-	err:=w.StartWatch()
-	if err!=nil {
+	w := Newvolwatcher(m1vol)
+	log.Printf("init res len is %v\n", len(w.GetRes()))
+	err := w.StartWatch()
+	if err != nil {
 		log.Println(err)
 		t.FailNow()
 		return
 	}
 	log.Println("start watch")
-	time.Sleep(10*time.Second)
+	time.Sleep(10 * time.Second)
 	w.StopWatch()
-	time.Sleep(1*time.Second)
-	res:=w.GetRes()
-	for k,v:=range res {
-		log.Printf("%v,%v\n",k,v)
+	time.Sleep(1 * time.Second)
+	res := w.GetRes()
+	for k, v := range res {
+		log.Printf("%v,%v\n", k, v)
 	}
 
-	s,err:=w.GetStablefile()
-	if err!=nil {
+	s, err := w.GetStablefile()
+	if err != nil {
 		log.Println(err)
 		return
 	}
-	for _,v:=range s {
+	for _, v := range s {
 		log.Println(v)
 	}
-	log.Printf("len f is %v,s is %v,mp is %v\n",len(w.files),len(s),len(res))
+	log.Printf("len f is %v,s is %v,mp is %v\n", len(w.files), len(s), len(res))
 	//log.Println(s)
 	return
 }

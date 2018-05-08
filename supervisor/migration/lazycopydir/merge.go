@@ -1,10 +1,10 @@
 package lazycopydir
 
 import (
-	"path/filepath"
+	"log"
 	"os"
 	"os/exec"
-	"log"
+	"path/filepath"
 )
 
 //merge upper and lazy,we must umount mergedir before do it

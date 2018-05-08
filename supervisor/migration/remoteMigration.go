@@ -201,7 +201,7 @@ func (r *remoteMigration) PreRemoteMigration(id, upperid string, args []string) 
 	}
 	pvol := make([]*types.Volumes, 0)
 	for _, v := range vol {
-		pvol = append(pvol, &types.Volumes{Dst: v.dst, Src: v.src,Iswrite:v.isWrite})
+		pvol = append(pvol, &types.Volumes{Dst: v.dst, Src: v.src, Iswrite: v.isWrite})
 	}
 	preRequest.Vol = pvol
 

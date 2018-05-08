@@ -501,47 +501,47 @@ func GetMotifyFiles(path string, ctx context.Context, res motifyvols) error {
 
 	for {
 		select {
-		case events:=<-w.Events:
-			if _,ok:=res[events.Name];!ok {
-				res[events.Name]=events.Op.String()
+		case events := <-w.Events:
+			if _, ok := res[events.Name]; !ok {
+				res[events.Name] = events.Op.String()
 			}
 		case <-ctx.Done():
 
 			goto END
 		}
 	}
-	END:
-		log.Printf("end monitor %v\n",path)
+END:
+	log.Printf("end monitor %v\n", path)
 	return nil
 }
 
-func getmap(files []string) map[string]bool  {
+func getmap(files []string) map[string]bool {
 	var (
-		res=make(map[string]bool)
+		res = make(map[string]bool)
 	)
-	for _,v:=range files {
-		if _,ok:=res[v];!ok {
-			res[v]=true
+	for _, v := range files {
+		if _, ok := res[v]; !ok {
+			res[v] = true
 		}
 	}
-	
-	if _,ok:=res["ib_logfile1"];!ok {
-		if _,ok:=res["ib_logfile0"];ok {
-			delete(res,"ib_logfile0")
+
+	if _, ok := res["ib_logfile1"]; !ok {
+		if _, ok := res["ib_logfile0"]; ok {
+			delete(res, "ib_logfile0")
 		}
 	}
 
 	return res
 }
 
-func getstablerelatepath(files []string,vol Volumes) []string  {
+func getstablerelatepath(files []string, vol Volumes) []string {
 	var (
-		res=make([]string,0)
+		res = make([]string, 0)
 	)
-	if len(files)==0 {
+	if len(files) == 0 {
 		panic("files len is 0")
 	}
-	for _,v:=range files {
+	for _, v := range files {
 		right := strings.TrimPrefix(v, vol.src)
 		if len(right) != len(v) {
 			res = append(res, right[1:])

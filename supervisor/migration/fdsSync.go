@@ -8,10 +8,9 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"errors"
+	"sync"
+	"time"
 )
-
-
 
 //首先把数据卷拷贝到对应的远程upper目录，然后根据crit x fds文件列表，同步这些文件
 //在本地监控数据卷，生成map 所有变更都存在其中，然后把上次同步过的文件从map中删除，
@@ -25,7 +24,7 @@ type allpath [2]string
 type volpath []allpath
 
 // remoteVolumesDirs:代表每个write数据卷在目的主机的拷贝目录
-func fdsSync(checkpointDir string, remoteVolumesDirs string, vols Volumes, ip string,smap map[string]bool) error {
+func fdsSync(checkpointDir string, remoteVolumesDirs string, vols Volumes, ip string, smap map[string]bool) error {
 	files, err := getFiles(checkpointDir)
 	if err != nil {
 		log.Println(err)
@@ -37,9 +36,9 @@ func fdsSync(checkpointDir string, remoteVolumesDirs string, vols Volumes, ip st
 		return err
 	}
 
-	log.Printf("before delete,len is %v,syncfiles is %v",len(syncfiles),syncfiles)
-	syncfiles=deletefromstablemap(syncfiles,smap)
-	log.Printf("now len is %v,syncfiles  is %v\n",len(syncfiles),syncfiles)
+	log.Printf("before delete,len is %v,syncfiles is %v", len(syncfiles), syncfiles)
+	syncfiles = deletefromstablemap(syncfiles, smap)
+	log.Printf("now len is %v,syncfiles  is %v\n", len(syncfiles), syncfiles)
 
 	if err = fastCopy(syncfiles, ip, remoteVolumesDirs, vols); err != nil {
 		log.Println(err)
@@ -50,17 +49,17 @@ func fdsSync(checkpointDir string, remoteVolumesDirs string, vols Volumes, ip st
 
 func deletefromstablemap(files []string, stmap map[string]bool) []string {
 
-	if len(files)==0 {
+	if len(files) == 0 {
 		panic("files is 0")
 	}
-	if len(stmap)==0 {
+	if len(stmap) == 0 {
 		log.Println("stmap is 0")
 	}
-	for i:=0;i<len(files);i++ {
-		if stmap[files[i]]==true {
-			log.Printf("delete %v\n",files[i])
-			files[i]=files[len(files)-1]
-			files=files[:len(files)-1]
+	for i := 0; i < len(files); i++ {
+		if stmap[files[i]] == true {
+			log.Printf("delete %v\n", files[i])
+			files[i] = files[len(files)-1]
+			files = files[:len(files)-1]
 			i--
 		}
 	}
@@ -75,7 +74,7 @@ func SaveOpenFile(checkdir, path string, vol Volumes) error {
 		log.Println(err)
 		return err
 	}
-	data:= syncNeedFiles(files, vol)
+	data := syncNeedFiles(files, vol)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -148,7 +147,7 @@ func getFiles(path string) ([]string, error) {
 
 //找到再数据卷中的文件
 func syncNeedFiles(files []string, vol Volumes) []string {
-	log.Printf("dst is %v\n",vol.dst)
+	log.Printf("dst is %v\n", vol.dst)
 	var (
 		res = make([]string, 0)
 	)
@@ -176,22 +175,38 @@ func syncNeedFiles(files []string, vol Volumes) []string {
 func fastCopy(files []string, ip string, remote string, vol Volumes) error {
 	var (
 		err error
+		wg  sync.WaitGroup
+		st  time.Time
 	)
 	if len(files) == 0 {
 		log.Println("files len is 0")
-		return errors.New("files nil")
+		return nil
 	}
 
 	//log.Printf("f is %v\n",files)
 	if err = os.Chdir(vol.src); err != nil {
 		log.Println(err)
 	}
+
+	st = time.Now()
+
 	for _, v := range files {
 		log.Printf("fdsync:%v\n",v)
-		if err = RemoteCopyFileRsync(v, remote, ip); err != nil {
-			log.Println(err)
-		}
+		wg.Add(1)
+
+		go func(file string) {
+			defer wg.Done()
+			log.Printf("fdsync:%v\n", file)
+			if err = RemoteCopyFileRsync(file, remote, ip); err != nil {
+				log.Println(err)
+			}
+		}(v)
+
 	}
+
+	wg.Wait()
+
+	log.Printf("fastcopy time is %v\n", time.Since(st))
 	return nil
 }
 
@@ -211,7 +226,7 @@ func RemoteCopyFileRsync(local, remote string, ip string) error {
 	//log.Printf("l is %v,r is %v,args is %v\n",local,remote,args)
 
 	cmd := exec.Command("rsync", args...)
-	//log.Println(cmd.Args)
+	log.Println(cmd.Args)
 
 	if out, err := cmd.CombinedOutput(); err != nil {
 		log.Printf("rsync error:%v,out:%v\n", err, string(out))
