@@ -211,15 +211,15 @@ func (l *localMigration) CopyWriteVolToRemote(r *remoteMigration) error {
 				return err
 			}
 
-			remotepathback:=remotePath+"back"
-			if err = RemoteMkdirAll(remotepathback, r.sftpClient); err != nil {
-				log.Println(err)
-				return err
-			}
-			if err=RemoteCopyDirRsync(v.src,remotepathback,r.ip);err!=nil {
-				log.Println(err)
-				return err
-			}
+			//remotepathback:=remotePath+"back"
+			//if err = RemoteMkdirAll(remotepathback, r.sftpClient); err != nil {
+			//	log.Println(err)
+			//	return err
+			//}
+			//if err=RemoteCopyDirRsync(v.src,remotepathback,r.ip);err!=nil {
+			//	log.Println(err)
+			//	return err
+			//}
 		}
 	}
 	return nil
@@ -402,7 +402,14 @@ func (l *localMigration) Getstablefiles(v *volwatcher) (map[string]bool,error) {
 		log.Println(err)
 		return nil,err
 	}
-	relatepath:=syncNeedFiles(res,l.vols[l.writevolid])
+	//log.Printf("stablefileres is: %v\n",res)
+
+	//log.Printf("vols is %v\n",l.vols[l.writevolid])
+	relatepath:=getstablerelatepath(res,l.vols[l.writevolid])
+	log.Printf("relatepath len is %v\n",len(relatepath))
+	if len(relatepath)==0 {
+		panic("len is 0")
+	}
 
 	stablemap:=getmap(relatepath)
 

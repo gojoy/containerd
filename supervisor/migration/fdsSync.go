@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"errors"
 )
 
 
@@ -35,7 +36,10 @@ func fdsSync(checkpointDir string, remoteVolumesDirs string, vols Volumes, ip st
 		log.Println(err)
 		return err
 	}
-	deletefromstablemap(syncfiles,smap)
+
+	log.Printf("before delete,len is %v,syncfiles is %v",len(syncfiles),syncfiles)
+	syncfiles=deletefromstablemap(syncfiles,smap)
+	log.Printf("now len is %v,syncfiles  is %v\n",len(syncfiles),syncfiles)
 
 	if err = fastCopy(syncfiles, ip, remoteVolumesDirs, vols); err != nil {
 		log.Println(err)
@@ -44,16 +48,23 @@ func fdsSync(checkpointDir string, remoteVolumesDirs string, vols Volumes, ip st
 	return nil
 }
 
-func deletefromstablemap(files []string, stmap map[string]bool)  {
+func deletefromstablemap(files []string, stmap map[string]bool) []string {
 
+	if len(files)==0 {
+		panic("files is 0")
+	}
+	if len(stmap)==0 {
+		log.Println("stmap is 0")
+	}
 	for i:=0;i<len(files);i++ {
 		if stmap[files[i]]==true {
 			log.Printf("delete %v\n",files[i])
 			files[i]=files[len(files)-1]
 			files=files[:len(files)-1]
+			i--
 		}
-		i--
 	}
+	return files
 }
 
 //将打开的文件保存到/run/migration/is/openfile.jsob目录下
@@ -112,7 +123,6 @@ func getFiles(path string) ([]string, error) {
 	args = append(args, path, "fds")
 	cmd := exec.Command("crit", args...)
 	out, err := cmd.Output()
-	log.Println(cmd.Args)
 	if err != nil {
 		log.Println(err, string(out))
 		return res, err
@@ -138,6 +148,7 @@ func getFiles(path string) ([]string, error) {
 
 //找到再数据卷中的文件
 func syncNeedFiles(files []string, vol Volumes) []string {
+	log.Printf("dst is %v\n",vol.dst)
 	var (
 		res = make([]string, 0)
 	)
@@ -167,7 +178,8 @@ func fastCopy(files []string, ip string, remote string, vol Volumes) error {
 		err error
 	)
 	if len(files) == 0 {
-		return err
+		log.Println("files len is 0")
+		return errors.New("files nil")
 	}
 
 	//log.Printf("f is %v\n",files)

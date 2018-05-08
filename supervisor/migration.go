@@ -254,6 +254,8 @@ func (t *MigrationTask) startMigrationTask(c *containerInfo) error {
 	}
 	log.Printf("direct time:%v\n",time.Since(st))
 
+	panic("test done!")
+
 	log.Println("copy checkpoint dir")
 	if err = l.CopyCheckPointToRemote(r); err != nil {
 		return err

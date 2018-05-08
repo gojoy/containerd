@@ -524,8 +524,28 @@ func getmap(files []string) map[string]bool  {
 			res[v]=true
 		}
 	}
-	if _,ok:=res["ib_logfile0"];ok {
-		delete(res,"ib_logfile0")
+	
+	if _,ok:=res["ib_logfile1"];!ok {
+		if _,ok:=res["ib_logfile0"];ok {
+			delete(res,"ib_logfile0")
+		}
+	}
+
+	return res
+}
+
+func getstablerelatepath(files []string,vol Volumes) []string  {
+	var (
+		res=make([]string,0)
+	)
+	if len(files)==0 {
+		panic("files len is 0")
+	}
+	for _,v:=range files {
+		right := strings.TrimPrefix(v, vol.src)
+		if len(right) != len(v) {
+			res = append(res, right[1:])
+		}
 	}
 	return res
 }
